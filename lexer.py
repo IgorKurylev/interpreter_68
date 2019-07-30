@@ -45,9 +45,9 @@ class Lexer:
         'WHILE', 'IF', 'ELDEF', 'ELUND', 'DO',
         'FINISH', 'DONE',
         'FORWARD', 'BACKWARD', 'LEFT', 'RIGHT', 'LOAD', 'DROP', 'LOOK', 'TEST',
-        'FUNCTION',
+        'FUNCTION', 'RETURN',
 
-        'INF', '-INF', 'NAN', 'TRUE', 'FALSE', 'UNDEF',
+        'INF', 'NAN', 'TRUE', 'FALSE', 'UNDEF',
         'CELL', 'EMPTY', 'WALL', 'BOX', 'EXIT',
         'VAR', 'INT', 'BOOL',
     )
@@ -73,8 +73,11 @@ class Lexer:
         'LBRACKET', 'RBRACKET',     # [ ]
         'COMMA',                    # ,
 
+        'OPEN_BRACKET', 'CLOSE_BRACKET',
+
         # Constants
         'INT_CONST',
+        '_NEWLINE',
     )
 
     identifier = r'[a-zA-Z_][0-9a-zA-Z_]*'
@@ -83,10 +86,7 @@ class Lexer:
 
     t_ignore = ' \t'
 
-    # Newlines
-    def t_NEWLINE(self, t):
-        r'\n+'
-        t.lexer.lineno += t.value.count("\n")
+    newline = r'\n+'
 
     # Operators
     t_PLUS              = r'\+'
@@ -99,7 +99,7 @@ class Lexer:
     t_GE                = r'>='
     t_EQ                = r'='
     t_NE                = r'!='
-    t_SHARP             = r'#'
+    t_SHARP             = r'\#'
 
     # Assignment operators
     t_ASSIGN            = r':='
@@ -111,6 +111,9 @@ class Lexer:
     t_RBRACKET          = r'\]'
     t_COMMA             = r','
 
+    t_OPEN_BRACKET      = r'{'
+    t_CLOSE_BRACKET     = r'}'
+
     @TOKEN(identifier)
     def t_ID(self, t):
         t.type = self.keyword_map.get(t.value, "ID")
@@ -118,6 +121,11 @@ class Lexer:
 
     @TOKEN(decimal_constant)
     def t_INT_CONST(self, t):
+        return t
+
+    @TOKEN(newline)
+    def t__NEWLINE(self, t):
+        t.lexer.lineno += t.value.count("\n")
         return t
 
     def t_error(self, t):

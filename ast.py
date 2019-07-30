@@ -52,13 +52,16 @@ class Node:
         buf.write('\n')
 
         for (child_name, child) in self.children():
-            child.show(
-                buf,
-                offset=offset + 2,
-                attrnames=attrnames,
-                nodenames=nodenames,
-                showcoord=showcoord,
-                _my_node_name=child_name)
+            if type(child) == str:
+                print(child)
+            else:
+                child.show(
+                    buf,
+                    offset=offset + 2,
+                    attrnames=attrnames,
+                    nodenames=nodenames,
+                    showcoord=showcoord,
+                    _my_node_name=child_name)
 
 class ArrayRef(Node):
     __slots__ = ('name', 'subscript', 'coord', '__weakref__')
