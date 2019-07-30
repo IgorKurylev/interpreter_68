@@ -176,3 +176,5 @@ fabric.properties
 
 __pycache__/
 
+parsetab.py
+parser.out
