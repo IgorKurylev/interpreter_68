@@ -506,16 +506,18 @@ class UnaryOp(Node):
     attr_names = ('op', )
 
 class While(Node):
-    __slots__ = ('cond', 'stmt', 'coord', '__weakref__')
-    def __init__(self, cond, stmt, coord=None):
+    __slots__ = ('cond', 'stmt', 'finish', 'coord', '__weakref__')
+    def __init__(self, cond, stmt, finish, coord=None):
         self.cond = cond
         self.stmt = stmt
+        self.finish = finish
         self.coord = coord
 
     def children(self):
         nodelist = []
         if self.cond is not None: nodelist.append(("cond", self.cond))
         if self.stmt is not None: nodelist.append(("stmt", self.stmt))
+        if self.finish is not None: nodelist.append(("finish", self.finish))
         return tuple(nodelist)
 
     def __iter__(self):
@@ -523,6 +525,8 @@ class While(Node):
             yield self.cond
         if self.stmt is not None:
             yield self.stmt
+        if self.finish is not None:
+            yield self.finish
 
     attr_names = ()
 

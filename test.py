@@ -184,14 +184,18 @@ do
 done
 """
 
-# text = r"""
-#     function main() do
-#
-#         if 3 + 3 do
-#             f := 4
-#
-#     done
-# """
+text = r"""
+    function main() 
+    do
+        while 4+4
+        do
+            f + 5
+            g := 5
+        done
+        finish
+            f + 2
+    done
+"""
 
 
 

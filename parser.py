@@ -542,8 +542,12 @@ class Parser:
         p[0] = ast.If(cond=p[2], iftrue=p[4], iffalse=p[7], ifundef=p[10], coord=self._token_coord(p, 1))
 
     def p_iteration_statement_1(self, p):
-        """ iteration_statement : WHILE expression DO statement """
-        p[0] = ast.While(p[2], p[4], self._token_coord(p, 1))
+        """ iteration_statement : WHILE expression _NEWLINE statement """
+        p[0] = ast.While(p[2], p[4], None, self._token_coord(p, 1))
+
+    def p_iteration_statement_2(self, p):
+        """ iteration_statement : WHILE expression _NEWLINE statement FINISH _NEWLINE statement """
+        p[0] = ast.While(p[2], p[4], p[7], self._token_coord(p, 1))
 
     def p_jump_statement(self, p):
         """ jump_statement  : RETURN expression _NEWLINE
