@@ -157,12 +157,41 @@ from parser import Parser
 #         t.
 #     end.
 # """
+
+
 text = r"""
-     function main() do
+     function main() 
+     do
           int a := 4
           b := a
      done
 """
+
+text = r"""
+function main() 
+do
+    if 3+2
+    do
+        f := 4
+        left
+    done
+    eldef 
+        d := d + 2
+    elund
+    do
+        4 - 2
+    done
+done
+"""
+
+# text = r"""
+#     function main() do
+#
+#         if 3 + 3 do
+#             f := 4
+#
+#     done
+# """
 
 
 
@@ -170,7 +199,7 @@ text = r"""
 parser = Parser(yacc_debug=True)
 # with open("fib.txt", "r") as f:
 #      ast = parser.parse(f.read(), filename='test3.txt', debuglevel=False)
-ast = parser.parse(text, filename='<none>', debuglevel=False)
+ast = parser.parse(text, filename='<none>', debuglevel=True)
 ast.show(attrnames=True, showcoord=True)
 
 # exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)

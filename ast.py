@@ -366,16 +366,20 @@ class IdentifierType(Node):
     attr_names = ('names', )
 
 class If(Node):
-    __slots__ = ('cond', 'iftrue', 'coord', '__weakref__')
-    def __init__(self, cond, iftrue, iffalse, coord=None):
+    __slots__ = ('cond', 'iftrue', 'iffalse', 'ifundef', 'coord', '__weakref__')
+    def __init__(self, cond, iftrue, iffalse=None, ifundef=None, coord=None):
         self.cond = cond
         self.iftrue = iftrue
+        self.iffalse = iffalse
+        self.ifundef = ifundef
         self.coord = coord
 
     def children(self):
         nodelist = []
         if self.cond is not None: nodelist.append(("cond", self.cond))
         if self.iftrue is not None: nodelist.append(("iftrue", self.iftrue))
+        if self.iffalse is not None: nodelist.append(("iffalse", self.iffalse))
+        if self.ifundef is not None: nodelist.append(("ifundef", self.ifundef))
         return tuple(nodelist)
 
     def __iter__(self):
@@ -383,6 +387,10 @@ class If(Node):
             yield self.cond
         if self.iftrue is not None:
             yield self.iftrue
+        if self.iffalse is not None:
+            yield self.iffalse
+        if self.ifundef is not None:
+            yield self.ifundef
 
     attr_names = ()
 

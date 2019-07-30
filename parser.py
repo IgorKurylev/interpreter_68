@@ -299,14 +299,14 @@ class Parser:
         p[0] = []
 
     def p_function_definition(self, p):
-        """ function_definition : FUNCTION id_declarator declaration_list compound_statement
-                                | FUNCTION id_declarator empty compound_statement
+        """ function_definition : FUNCTION id_declarator declaration_list _NEWLINE compound_statement
+                                | FUNCTION id_declarator empty _NEWLINE compound_statement
         """
         p[0] = self._build_function_definition(
             spec=None,
             decl=p[2],
             param_decls=p[3],
-            body=p[4])
+            body=p[5])
         if self.func_dict.get(p[0].decl.name) and self.func_dict.get(p[0].decl.name) != "def":
             print("ERROR at %s : function definition is already exists" % self._coord(p[0].coord))
             self._err_flag = True
@@ -434,7 +434,6 @@ class Parser:
                                    | direct_id_declarator LPAREN empty RPAREN
         """
 
-
         func = ast.FuncDecl(
             args=p[3],
             type=None,
@@ -514,8 +513,8 @@ class Parser:
         p[0] = p[1] if (len(p) == 2 or p[2] == [None]) else p[1] + p[2]
 
     def p_compound_statement_1(self, p):
-        """ compound_statement : brace_open block_item_list brace_close
-                               | brace_open empty brace_close
+        """ compound_statement : brace_open block_item_list brace_close _NEWLINE
+                               | brace_open empty brace_close _NEWLINE
         """
 
         p[0] = ast.Compound(
@@ -523,11 +522,24 @@ class Parser:
             coord=self._token_coord(p, 1))
 
     def p_selection_statement_1(self, p):
-        """ selection_statement : IF expression DO statement """
+        """ selection_statement : IF expression _NEWLINE statement """
         if p[2] is None:
             print("ERROR at {}:{} : wrong format of check".format(p[4].coord.line, 10))
             self._err_flag = True
-        p[0] = ast.If(p[2], p[4], None, self._token_coord(p, 1))
+        p[0] = ast.If(cond=p[2], iftrue=p[4], coord=self._token_coord(p, 1))
+
+    def p_selection_statement_2(self, p):
+        """ selection_statement : IF expression _NEWLINE statement ELDEF _NEWLINE statement """
+        p[0] = ast.If(cond=p[2], iftrue=p[4], iffalse=p[7], coord=self._token_coord(p, 1))
+
+    def p_selection_statement_3(self, p):
+        """ selection_statement : IF expression _NEWLINE statement ELUND _NEWLINE statement """
+        p[0] = ast.If(cond=p[2], iftrue=p[4], ifundef=p[7], coord=self._token_coord(p, 1))
+
+    def p_selection_statement_4(self, p):
+        """ selection_statement : IF expression _NEWLINE statement ELDEF _NEWLINE statement ELUND _NEWLINE statement """
+
+        p[0] = ast.If(cond=p[2], iftrue=p[4], iffalse=p[7], ifundef=p[10], coord=self._token_coord(p, 1))
 
     def p_iteration_statement_1(self, p):
         """ iteration_statement : WHILE expression DO statement """
@@ -541,11 +553,12 @@ class Parser:
 
     def p_expression_statement(self, p):
         """ expression_statement : expression _NEWLINE
+
                                  | _NEWLINE
         """
 
-        if p[1] is None:
-            p[0] = ast.EmptyStatement(self._token_coord(p, 2))
+        if p[1] is '\n':
+            p[0] = ast.EmptyStatement(self._token_coord(p, 1))
         else:
             p[0] = p[1]
 
