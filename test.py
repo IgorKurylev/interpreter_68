@@ -212,6 +212,16 @@ text = r"""
     done
 """
 
+text = r"""
+    function main(a, b, c)
+    do
+        var a
+        int b
+    done
+"""
+
+
+
 parser = Parser(yacc_debug=True)
 # with open("fib.txt", "r") as f:
 #      ast = parser.parse(f.read(), filename='test3.txt', debuglevel=False)

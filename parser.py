@@ -4,13 +4,14 @@ from ply import yacc
 import tree
 from lexer import Lexer
 
+
 class Coord:
     __slots__ = ('file', 'line', 'column', '__weakref__')
+
     def __init__(self, file, line, column=None):
         self.file = file
         self.line = line
         self.column = column
-
 
     def __str__(self):
         str = "%s:%s" % (self.file, self.line)
@@ -147,16 +148,12 @@ class Parser:
 
         decl.name = type.declname
 
-        if typename:
-            for tn in typename:
-                if not isinstance(tn, tree.IdentifierType):
-                    if len(typename) > 1:
-                        self._parse_error(
-                            "Invalid multiple types specified", tn.coord)
-                    else:
-                        tn = tn['type'][0]  # TODO
-                        type.type = tn
-                        return decl
+        # if typename:
+        #     for tn in typename:
+        #         if not isinstance(tn, tree.IdentifierType):
+        #             tn = tn['type'][0]  # TODO
+        #             type.type = tn
+        #             return decl
 
         if not typename:
 
@@ -185,40 +182,34 @@ class Parser:
     def _build_declarations(self, spec, decls, typedef_namespace=False):
         declarations = []
 
-        if decls[0]['decl'] is None:
+        # if decls[0]['decl'] is None:
+        #     if len(spec['type']) < 2 or len(spec['type'][-1].names) != 1 or \
+        #             not self._is_type_in_scope(spec['type'][-1].names[0]):
+        #         coord = '?'
+        #         for t in spec['type']:
+        #             if hasattr(t, 'coord'):
+        #                 coord = t.coord
+        #                 break
+        #         self._parse_error('Invalid declaration', coord)
+        #
+        #     decls[0]['decl'] = tree.TypeDecl(
+        #         declname=spec['type'][-1].names[0],
+        #         type=None,
+        #
+        #         coord=spec['type'][-1].coord)
+        #
+        #     del spec['type'][-1]
 
-            if len(spec['type']) < 2 or len(spec['type'][-1].names) != 1 or \
-                    not self._is_type_in_scope(spec['type'][-1].names[0]):
-                coord = '?'
-                for t in spec['type']:
-                    if hasattr(t, 'coord'):
-                        coord = t.coord
-                        break
-                self._parse_error('Invalid declaration', coord)
-
-            decls[0]['decl'] = tree.TypeDecl(
-                declname=spec['type'][-1].names[0],
-                type=None,
-
-                coord=spec['type'][-1].coord)
-
-            del spec['type'][-1]
-
-        elif not isinstance(decls[0]['decl'], tree.IdentifierType):
-            decls_0_tail = decls[0]['decl']
-            while not isinstance(decls_0_tail, tree.TypeDecl):
-                decls_0_tail = decls_0_tail.type
-            if decls_0_tail.declname is None:
-                decls_0_tail.declname = spec['type'][-1].names[0]
-                del spec['type'][-1]
+        # if not isinstance(decls[0]['decl'], tree.IdentifierType):
+        #     decls_0_tail = decls[0]['decl']
+        #     while not isinstance(decls_0_tail, tree.TypeDecl):
+        #         decls_0_tail = decls_0_tail.type
+        #     if decls_0_tail.declname is None:
+        #         decls_0_tail.declname = spec['type'][-1].names[0]
+        #         del spec['type'][-1]
 
         for decl in decls:
             assert decl['decl'] is not None
-            conv_to = None
-            conv_from = None
-            if spec is not None:
-                conv_to = spec.get('conv_to')
-                conv_from = spec.get('conv_from')
             declaration = tree.Decl(
                 name=None,
                 type=decl['decl'],
@@ -310,8 +301,11 @@ class Parser:
         if self.func_dict.get(p[0].decl.name) and self.func_dict.get(p[0].decl.name) != "def":
             print("ERROR at %s : function definition is already exists" % self._coord(p[0].coord))
             self._err_flag = True
+
         else:
             self.func_dict[p[0].decl.name] = p[0]
+
+
 
     def p_statement(self, p):
         """ statement   : expression_statement
@@ -466,18 +460,12 @@ class Parser:
 
 
     def p_parameter_declaration_1(self, p):
-        """ parameter_declaration   : type_specifier id_declarator
+        """ parameter_declaration   :  id_declarator
         """
 
-        spec = p[1]
-
-        if not spec['type']:
-            spec['type'] = [tree.IdentifierType(['int'],
-                                                coord=self._token_coord(p, 1))]
-
         p[0] = self._build_declarations(
-            spec=spec,
-            decls=[dict(decl=p[2])])[0]
+            spec=None,
+            decls=[dict(decl=p[1])])[0]
 
     def p_identifier_list(self, p):
         """ identifier_list : identifier
@@ -722,10 +710,15 @@ class Parser:
     def p_constant_4(self, p):
         """ constant    : TRUE
                         | FALSE
-                        | UNDEF
         """
         p[0] = tree.Constant(
             'bool', p[1], self._token_coord(p, 1))
+
+    def p_constant_5(self, p):
+        """ constant    : UNDEF
+        """
+        p[0] = tree.Constant(
+            'extra_bool', p[1], self._token_coord(p, 1))
 
     def p_brace_open(self, p):
         """ brace_open  :   DO
