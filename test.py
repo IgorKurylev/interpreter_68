@@ -197,6 +197,13 @@ text = r"""
     done
 """
 
+text = r"""
+    function main() 
+    do
+        test
+        forward 5
+    done
+"""
 
 
 

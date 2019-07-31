@@ -614,22 +614,26 @@ class Parser:
 
     def p_cast_expression_1(self, p):
         """ cast_expression : unary_expression
-                            | robot_operator
+                            | robot_expression
         """
         p[0] = p[1]
+
+    def p_robot_expression(self, p):
+        """ robot_expression : LEFT
+                             | RIGHT
+                             | LOOK
+                             | TEST
+        """
+        p[0] = ast.UnaryOp(p[1], None, self._token_coord(p, 1))
 
     def p_robot_operator(self, p):
         """
         robot_operator    : FORWARD
                           | BACKWARD
-                          | LEFT
-                          | RIGHT
                           | LOAD
                           | DROP
-                          | LOOK
-                          | TEST
         """
-        p[0] = ast.UnaryOp(p[1], None, self._token_coord(p, 1))
+        p[0] = p[1]
 
     def p_unary_expression_1(self, p):
         """ unary_expression    : postfix_expression """
@@ -640,9 +644,11 @@ class Parser:
         """
         p[0] = ast.UnaryOp(p[1], p[2], p[2].coord)
 
-    def p_unary_operator(self, p):
-        """ unary_operator  : PLUS
+    def p_unary_operator_1(self, p):
+        """ unary_operator  : robot_operator
+                            | PLUS
                             | MINUS
+                            | SHARP
         """
         p[0] = p[1]
 
@@ -694,6 +700,31 @@ class Parser:
         """
         p[0] = ast.Constant(
             'int', p[1], self._token_coord(p, 1))
+
+    def p_constant_2(self, p):
+        """ constant    :  EMPTY
+                        |  WALL
+                        |  BOX
+                        |  EXIT
+        """
+        p[0] = ast.Constant(
+            'robot', p[1], self._token_coord(p, 1))
+
+    def p_constant_3(self, p):
+        """ constant    : INF
+                        | MINUS INF
+                        | NAN
+        """
+        p[0] = ast.Constant(
+            'extra_int', p[1], self._token_coord(p, 1))
+
+    def p_constant_4(self, p):
+        """ constant    : TRUE
+                        | FALSE
+                        | UNDEF
+        """
+        p[0] = ast.Constant(
+            'bool', p[1], self._token_coord(p, 1))
 
     def p_brace_open(self, p):
         """ brace_open  :   DO
