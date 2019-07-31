@@ -1,7 +1,7 @@
 from ply import yacc
 
 
-import ast
+import tree
 from lexer import Lexer
 
 class Coord:
@@ -125,13 +125,13 @@ class Parser:
         while modifier_tail.type:
             modifier_tail = modifier_tail.type
 
-        if isinstance(decl, ast.TypeDecl):
+        if isinstance(decl, tree.TypeDecl):
             modifier_tail.type = decl
             return modifier
         else:
             decl_tail = decl
 
-            while not isinstance(decl_tail.type, ast.TypeDecl):
+            while not isinstance(decl_tail.type, tree.TypeDecl):
                 decl_tail = decl_tail.type
 
             modifier_tail.type = decl_tail.type
@@ -142,14 +142,14 @@ class Parser:
         # Reach the underlying basic type
         #
         type = decl
-        while not isinstance(type, ast.TypeDecl):
+        while not isinstance(type, tree.TypeDecl):
             type = type.type
 
         decl.name = type.declname
 
         if typename:
             for tn in typename:
-                if not isinstance(tn, ast.IdentifierType):
+                if not isinstance(tn, tree.IdentifierType):
                     if len(typename) > 1:
                         self._parse_error(
                             "Invalid multiple types specified", tn.coord)
@@ -160,14 +160,14 @@ class Parser:
 
         if not typename:
 
-            type.type = ast.IdentifierType(
+            type.type = tree.IdentifierType(
                 ['None'],
                 coord=decl.coord)
         else:
             # At this point, we know that typename is a list of IdentifierType
             # nodes. Concatenate all the names into a single list.
             #
-            type.type = ast.IdentifierType(
+            type.type = tree.IdentifierType(
                 [name for id in typename for name in id.names],
                 coord=typename[0].coord)
         return decl
@@ -196,7 +196,7 @@ class Parser:
                         break
                 self._parse_error('Invalid declaration', coord)
 
-            decls[0]['decl'] = ast.TypeDecl(
+            decls[0]['decl'] = tree.TypeDecl(
                 declname=spec['type'][-1].names[0],
                 type=None,
 
@@ -204,9 +204,9 @@ class Parser:
 
             del spec['type'][-1]
 
-        elif not isinstance(decls[0]['decl'], ast.IdentifierType):
+        elif not isinstance(decls[0]['decl'], tree.IdentifierType):
             decls_0_tail = decls[0]['decl']
-            while not isinstance(decls_0_tail, ast.TypeDecl):
+            while not isinstance(decls_0_tail, tree.TypeDecl):
                 decls_0_tail = decls_0_tail.type
             if decls_0_tail.declname is None:
                 decls_0_tail.declname = spec['type'][-1].names[0]
@@ -219,14 +219,14 @@ class Parser:
             if spec is not None:
                 conv_to = spec.get('conv_to')
                 conv_from = spec.get('conv_from')
-            declaration = ast.Decl(
+            declaration = tree.Decl(
                 name=None,
                 type=decl['decl'],
                 init=decl.get('init'),
                 coord=decl['decl'].coord,
             )
 
-            if isinstance(declaration.type, ast.IdentifierType):
+            if isinstance(declaration.type, tree.IdentifierType):
                 fixed_decl = declaration
             else:
                 if spec:
@@ -247,7 +247,7 @@ class Parser:
             decls=[dict(decl=decl, init=None)],
             typedef_namespace=True)[0]
 
-        return ast.FuncDef(
+        return tree.FuncDef(
             decl=declaration,
             param_decls=param_decls,
             body=body,
@@ -266,9 +266,9 @@ class Parser:
                                         | empty
         """
         if p[1] is None:
-            p[0] = ast.FileAST([])
+            p[0] = tree.FileAST([])
         else:
-            p[0] = ast.FileAST(p[1])
+            p[0] = tree.FileAST(p[1])
 
     def p_translation_unit_1(self, p):
         """ translation_unit    : external_declaration
@@ -355,7 +355,7 @@ class Parser:
                                       | VAR
         """
 
-        buf = ast.IdentifierType([p[1]], coord=self._token_coord(p, 1))
+        buf = tree.IdentifierType([p[1]], coord=self._token_coord(p, 1))
         p[0] = self._add_declaration_specifier(None, buf, 'type')
 
     def p_init_declarator_list(self, p):
@@ -381,7 +381,7 @@ class Parser:
                         | OPEN_BRACKET initializer_list COMMA CLOSE_BRACKET
         """
         if p[2] is None:
-            p[0] = ast.InitList([], self._token_coord(p, 1))
+            p[0] = tree.InitList([], self._token_coord(p, 1))
         else:
             p[0] = p[2]
 
@@ -391,7 +391,7 @@ class Parser:
         """
         if len(p) == 2:  # single initializer
 
-            p[0] = ast.InitList([p[1]], p[1].coord)
+            p[0] = tree.InitList([p[1]], p[1].coord)
         else:
             init = p[3]
             p[1].exprs.append(init)
@@ -417,7 +417,7 @@ class Parser:
     def p_direct_id_declarator_1(self, p):
         """ direct_id_declarator   : ID
         """
-        p[0] = ast.TypeDecl(
+        p[0] = tree.TypeDecl(
             declname=p[1],
             type=None,
 
@@ -434,7 +434,7 @@ class Parser:
                                    | direct_id_declarator LPAREN empty RPAREN
         """
 
-        func = ast.FuncDecl(
+        func = tree.FuncDecl(
             args=p[3],
             type=None,
             coord=p[1].coord)
@@ -459,7 +459,7 @@ class Parser:
                             | parameter_list COMMA parameter_declaration
         """
         if len(p) == 2: # single parameter
-            p[0] = ast.ParamList([p[1]], p[1].coord)
+            p[0] = tree.ParamList([p[1]], p[1].coord)
         else:
             p[1].params.append(p[3])
             p[0] = p[1]
@@ -472,8 +472,8 @@ class Parser:
         spec = p[1]
 
         if not spec['type']:
-            spec['type'] = [ast.IdentifierType(['int'],
-                                               coord=self._token_coord(p, 1))]
+            spec['type'] = [tree.IdentifierType(['int'],
+                                                coord=self._token_coord(p, 1))]
 
         p[0] = self._build_declarations(
             spec=spec,
@@ -484,7 +484,7 @@ class Parser:
                             | identifier_list COMMA identifier
         """
         if len(p) == 2:  # single parameter
-            p[0] = ast.ParamList([p[1]], p[1].coord)
+            p[0] = tree.ParamList([p[1]], p[1].coord)
         else:
             p[1].params.append(p[3])
             p[0] = p[1]
@@ -493,6 +493,7 @@ class Parser:
     def p_block_item(self, p):
         """ block_item  : declaration
                         | statement
+                        | function_definition
         """
 
         if p[1] == '\n':
@@ -512,12 +513,12 @@ class Parser:
 
         p[0] = p[1] if (len(p) == 2 or p[2] == [None]) else p[1] + p[2]
 
-    def p_compound_statement_1(self, p):
+    def p_compound_statement(self, p):
         """ compound_statement : brace_open block_item_list brace_close _NEWLINE
                                | brace_open empty brace_close _NEWLINE
         """
 
-        p[0] = ast.Compound(
+        p[0] = tree.Compound(
             block_items=p[2],
             coord=self._token_coord(p, 1))
 
@@ -526,34 +527,34 @@ class Parser:
         if p[2] is None:
             print("ERROR at {}:{} : wrong format of check".format(p[4].coord.line, 10))
             self._err_flag = True
-        p[0] = ast.If(cond=p[2], iftrue=p[4], coord=self._token_coord(p, 1))
+        p[0] = tree.If(cond=p[2], iftrue=p[4], coord=self._token_coord(p, 1))
 
     def p_selection_statement_2(self, p):
         """ selection_statement : IF expression _NEWLINE statement ELDEF _NEWLINE statement """
-        p[0] = ast.If(cond=p[2], iftrue=p[4], iffalse=p[7], coord=self._token_coord(p, 1))
+        p[0] = tree.If(cond=p[2], iftrue=p[4], iffalse=p[7], coord=self._token_coord(p, 1))
 
     def p_selection_statement_3(self, p):
         """ selection_statement : IF expression _NEWLINE statement ELUND _NEWLINE statement """
-        p[0] = ast.If(cond=p[2], iftrue=p[4], ifundef=p[7], coord=self._token_coord(p, 1))
+        p[0] = tree.If(cond=p[2], iftrue=p[4], ifundef=p[7], coord=self._token_coord(p, 1))
 
     def p_selection_statement_4(self, p):
         """ selection_statement : IF expression _NEWLINE statement ELDEF _NEWLINE statement ELUND _NEWLINE statement """
 
-        p[0] = ast.If(cond=p[2], iftrue=p[4], iffalse=p[7], ifundef=p[10], coord=self._token_coord(p, 1))
+        p[0] = tree.If(cond=p[2], iftrue=p[4], iffalse=p[7], ifundef=p[10], coord=self._token_coord(p, 1))
 
     def p_iteration_statement_1(self, p):
         """ iteration_statement : WHILE expression _NEWLINE statement """
-        p[0] = ast.While(p[2], p[4], None, self._token_coord(p, 1))
+        p[0] = tree.While(p[2], p[4], None, self._token_coord(p, 1))
 
     def p_iteration_statement_2(self, p):
         """ iteration_statement : WHILE expression _NEWLINE statement FINISH _NEWLINE statement """
-        p[0] = ast.While(p[2], p[4], p[7], self._token_coord(p, 1))
+        p[0] = tree.While(p[2], p[4], p[7], self._token_coord(p, 1))
 
     def p_jump_statement(self, p):
         """ jump_statement  : RETURN expression _NEWLINE
                             | RETURN _NEWLINE
         """
-        p[0] = ast.Return(p[2] if len(p) == 4 else None, self._token_coord(p, 1))
+        p[0] = tree.Return(p[2] if len(p) == 4 else None, self._token_coord(p, 1))
 
     def p_expression_statement(self, p):
         """ expression_statement : expression _NEWLINE
@@ -562,7 +563,7 @@ class Parser:
         """
 
         if p[1] is '\n':
-            p[0] = ast.EmptyStatement(self._token_coord(p, 1))
+            p[0] = tree.EmptyStatement(self._token_coord(p, 1))
         else:
             p[0] = p[1]
 
@@ -573,8 +574,8 @@ class Parser:
         if len(p) == 2:
             p[0] = p[1]
         else:
-            if not isinstance(p[1], ast.ExprList):
-                p[1] = ast.ExprList([p[1]], p[1].coord)
+            if not isinstance(p[1], tree.ExprList):
+                p[1] = tree.ExprList([p[1]], p[1].coord)
 
             p[1].exprs.append(p[3])
             p[0] = p[1]
@@ -586,7 +587,7 @@ class Parser:
         if len(p) == 2:
             p[0] = p[1]
         else:
-            p[0] = ast.Assignment(p[2], p[1], p[3], p[1].coord)
+            p[0] = tree.Assignment(p[2], p[1], p[3], p[1].coord)
 
     def p_assignment_operator(self, p):
         """ assignment_operator : ASSIGN
@@ -610,7 +611,7 @@ class Parser:
         if len(p) == 2:
             p[0] = p[1]
         else:
-            p[0] = ast.BinaryOp(p[2], p[1], p[3], p[1].coord)
+            p[0] = tree.BinaryOp(p[2], p[1], p[3], p[1].coord)
 
     def p_cast_expression_1(self, p):
         """ cast_expression : unary_expression
@@ -624,7 +625,7 @@ class Parser:
                              | LOOK
                              | TEST
         """
-        p[0] = ast.UnaryOp(p[1], None, self._token_coord(p, 1))
+        p[0] = tree.UnaryOp(p[1], None, self._token_coord(p, 1))
 
     def p_robot_operator(self, p):
         """
@@ -642,7 +643,7 @@ class Parser:
     def p_unary_expression_2(self, p):
         """ unary_expression    : unary_operator cast_expression
         """
-        p[0] = ast.UnaryOp(p[1], p[2], p[2].coord)
+        p[0] = tree.UnaryOp(p[1], p[2], p[2].coord)
 
     def p_unary_operator_1(self, p):
         """ unary_operator  : robot_operator
@@ -666,7 +667,7 @@ class Parser:
             if p[1].name != 'print':
                 print("ERROR at {} : function {} is not already defined" .format(self._coord(p[1].coord), p[1].name))
                 self._err_flag = True
-        p[0] = ast.FuncCall(p[1], p[3] if len(p) == 5 else None, p[1].coord)
+        p[0] = tree.FuncCall(p[1], p[3] if len(p) == 5 else None, p[1].coord)
 
     def p_postfix_expression_3(self, p):
         """ postfix_expression  : postfix_expression LBRACKET expression RBRACKET
@@ -675,7 +676,7 @@ class Parser:
         if p[3] is None:
             print("ERROR at {}:{} : empty index occured".format(p[1].coord.line, p[1].coord.column + 1))
             self._err_flag = True
-        p[0] = ast.ArrayRef(p[1], p[3], p[1].coord)
+        p[0] = tree.ArrayRef(p[1], p[3], p[1].coord)
 
     def p_postfix_expression_4(self, p):
         """ postfix_expression  : LPAREN expression RPAREN """
@@ -686,19 +687,19 @@ class Parser:
                                         | argument_expression_list COMMA assignment_expression
         """
         if len(p) == 2:  # single expr
-            p[0] = ast.ExprList([p[1]], p[1].coord)
+            p[0] = tree.ExprList([p[1]], p[1].coord)
         else:
             p[1].exprs.append(p[3])
             p[0] = p[1]
 
     def p_identifier(self, p):
         """ identifier  : ID """
-        p[0] = ast.ID(p[1], self._token_coord(p, 1))
+        p[0] = tree.ID(p[1], self._token_coord(p, 1))
 
     def p_constant_1(self, p):
         """ constant    : INT_CONST
         """
-        p[0] = ast.Constant(
+        p[0] = tree.Constant(
             'int', p[1], self._token_coord(p, 1))
 
     def p_constant_2(self, p):
@@ -707,7 +708,7 @@ class Parser:
                         |  BOX
                         |  EXIT
         """
-        p[0] = ast.Constant(
+        p[0] = tree.Constant(
             'robot', p[1], self._token_coord(p, 1))
 
     def p_constant_3(self, p):
@@ -715,7 +716,7 @@ class Parser:
                         | MINUS INF
                         | NAN
         """
-        p[0] = ast.Constant(
+        p[0] = tree.Constant(
             'extra_int', p[1], self._token_coord(p, 1))
 
     def p_constant_4(self, p):
@@ -723,7 +724,7 @@ class Parser:
                         | FALSE
                         | UNDEF
         """
-        p[0] = ast.Constant(
+        p[0] = tree.Constant(
             'bool', p[1], self._token_coord(p, 1))
 
     def p_brace_open(self, p):

@@ -100,6 +100,7 @@ class Lexer:
     t_EQ                = r'='
     t_NE                = r'!='
     t_SHARP             = r'\#'
+    t_XOR               = r'\^'
 
     # Assignment operators
     t_ASSIGN            = r':='

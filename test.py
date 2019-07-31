@@ -168,20 +168,20 @@ text = r"""
 """
 
 text = r"""
-function main() 
-do
-    if 3+2
+    function main() 
     do
-        f := 4
-        left
+        if 3+2
+        do
+            f := 4
+            left
+        done
+        eldef 
+            d := d + 2
+        elund
+        do
+            4 - 2
+        done
     done
-    eldef 
-        d := d + 2
-    elund
-    do
-        4 - 2
-    done
-done
 """
 
 text = r"""
@@ -200,12 +200,17 @@ text = r"""
 text = r"""
     function main() 
     do
-        test
-        forward 5
+        function ggg()
+        do
+            function hhh()
+            do
+                var a, b, c := undef
+                if 5 ^ 1
+                    print(a[5])
+            done
+        done
     done
 """
-
-
 
 parser = Parser(yacc_debug=True)
 # with open("fib.txt", "r") as f:
