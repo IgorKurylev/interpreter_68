@@ -140,32 +140,17 @@ class Parser:
             return decl
 
     def _fix_decl_name_type(self, decl, typename):
-        # Reach the underlying basic type
-        #
         type = decl
-        while not isinstance(type, tree.TypeDecl):
+        while not isinstance(type.type, tree.TypeDecl):
             type = type.type
 
-        decl.name = type.declname
-
-        # if typename:
-        #     for tn in typename:
-        #         if not isinstance(tn, tree.IdentifierType):
-        #             tn = tn['type'][0]  # TODO
-        #             type.type = tn
-        #             return decl
+        decl.name = type.type.declname
 
         if not typename:
-
-            type.type = tree.IdentifierType(
-                ['None'],
-                coord=decl.coord)
+            type.type = None
         else:
-            # At this point, we know that typename is a list of IdentifierType
-            # nodes. Concatenate all the names into a single list.
-            #
             type.type = tree.IdentifierType(
-                [name for id in typename for name in id.names],
+                typename[0].name[0],
                 coord=typename[0].coord)
         return decl
 
@@ -181,32 +166,6 @@ class Parser:
 
     def _build_declarations(self, spec, decls, typedef_namespace=False):
         declarations = []
-
-        # if decls[0]['decl'] is None:
-        #     if len(spec['type']) < 2 or len(spec['type'][-1].names) != 1 or \
-        #             not self._is_type_in_scope(spec['type'][-1].names[0]):
-        #         coord = '?'
-        #         for t in spec['type']:
-        #             if hasattr(t, 'coord'):
-        #                 coord = t.coord
-        #                 break
-        #         self._parse_error('Invalid declaration', coord)
-        #
-        #     decls[0]['decl'] = tree.TypeDecl(
-        #         declname=spec['type'][-1].names[0],
-        #         type=None,
-        #
-        #         coord=spec['type'][-1].coord)
-        #
-        #     del spec['type'][-1]
-
-        # if not isinstance(decls[0]['decl'], tree.IdentifierType):
-        #     decls_0_tail = decls[0]['decl']
-        #     while not isinstance(decls_0_tail, tree.TypeDecl):
-        #         decls_0_tail = decls_0_tail.type
-        #     if decls_0_tail.declname is None:
-        #         decls_0_tail.declname = spec['type'][-1].names[0]
-        #         del spec['type'][-1]
 
         for decl in decls:
             assert decl['decl'] is not None

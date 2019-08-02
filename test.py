@@ -216,7 +216,7 @@ text = r"""
     function main(a, b, c)
     do
         var a
-        int b
+        int b := dd()
     done
 """
 
@@ -225,7 +225,7 @@ text = r"""
 parser = Parser(yacc_debug=True)
 # with open("fib.txt", "r") as f:
 #      ast = parser.parse(f.read(), filename='test3.txt', debuglevel=False)
-ast = parser.parse(text, filename='<none>', debuglevel=True)
+ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 
 # exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)

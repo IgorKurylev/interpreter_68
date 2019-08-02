@@ -350,9 +350,9 @@ class ID(Node):
     attr_names = ('name', )
 
 class IdentifierType(Node):
-    __slots__ = ('names', 'coord', '__weakref__')
-    def __init__(self, names, coord=None):
-        self.names = names
+    __slots__ = ('name', 'coord', '__weakref__')
+    def __init__(self, name, coord=None):
+        self.name = name
         self.coord = coord
 
     def children(self):
@@ -363,7 +363,7 @@ class IdentifierType(Node):
         return
         yield
 
-    attr_names = ('names', )
+    attr_names = ('name', )
 
 class If(Node):
     __slots__ = ('cond', 'iftrue', 'iffalse', 'ifundef', 'coord', '__weakref__')
