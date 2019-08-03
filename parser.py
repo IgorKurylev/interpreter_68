@@ -50,7 +50,7 @@ class Parser:
 
         self._last_yielded_token = None
 
-        self.func_dict = {}
+        #self.func_dict = {}
         self._err_flag = False
 
     def parse(self, text, filename='', debuglevel=True):
@@ -258,12 +258,12 @@ class Parser:
             decl=p[2],
             param_decls=p[3],
             body=p[5])
-        if self.func_dict.get(p[0].decl.name) and self.func_dict.get(p[0].decl.name) != "def":
-            print("ERROR at %s : function definition is already exists" % self._coord(p[0].coord))
-            self._err_flag = True
+        # if self.func_dict.get(p[0].decl.name) and self.func_dict.get(p[0].decl.name) != "def":
+        #     print("ERROR at %s : function definition is already exists" % self._coord(p[0].coord))
+        #     self._err_flag = True
 
-        else:
-            self.func_dict[p[0].decl.name] = p[0]
+        # else:
+        #     self.func_dict[p[0].decl.name] = p[0]
 
 
 
@@ -393,7 +393,7 @@ class Parser:
             type=None,
             coord=p[1].coord)
 
-        self.func_dict[p[1].declname] = "def"
+        #self.func_dict[p[1].declname] = "def"
         if self._get_yacc_lookahead_token().type == "LBRACE":
             if func.args is not None:
                 for param in func.args.params:
@@ -611,10 +611,10 @@ class Parser:
         """ postfix_expression  : postfix_expression LPAREN argument_expression_list RPAREN
                                 | postfix_expression LPAREN RPAREN
         """
-        if self.func_dict.get(p[1].name) is None:
-            if p[1].name != 'print':
-                print("ERROR at {} : function {} is not already defined" .format(self._coord(p[1].coord), p[1].name))
-                self._err_flag = True
+        # if self.func_dict.get(p[1].name) is None:
+        #     if p[1].name != 'print':
+        #         print("ERROR at {} : function {} is not already defined" .format(self._coord(p[1].coord), p[1].name))
+        #         self._err_flag = True
         p[0] = tree.FuncCall(p[1], p[3] if len(p) == 5 else None, p[1].coord)
 
     def p_postfix_expression_3(self, p):

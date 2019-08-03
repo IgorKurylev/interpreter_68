@@ -222,18 +222,104 @@ text = r"""
 
 text = r"""
     
-    
-    function p()
-    do
-        print(1,2,3)
-        
-    done
-    
     function main(a, b, c)
     do
-  
         a := 5
-        a[0] := -5
+        b := 1
+        a[3] := b
+        b[4] := 1000
+        a[3][2] := -1
+    done
+"""
+
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 3
+        b := 4
+        if 3 + 2
+        do
+            print(666)
+        done
+        eldef
+        do
+            
+        done
+            
+
+    done
+"""
+
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 3
+        b := 4
+        print(a+b)
+
+
+    done
+"""
+
+text = r"""
+    function fib(n)
+    do
+        if n = 0
+            return n
+        if n = 1
+            return n
+        return fib(n-2) + fib(n-1)
+    done
+
+    function main()
+    do
+        a := 0
+        a[0] := fib(1)
+        a[1] := fib(2)
+        a[2] := fib(3)
+        a[3] := fib(4)
+        a[4] := fib(5) 
+        
+    done
+"""
+
+text = r"""
+        function factorial(n)
+        do
+            if n = 0
+                return n
+            if n = 1
+                return n
+            return n * factorial(n-1)
+        done
+
+        function main()
+        do
+            a := 0
+            a[0] := factorial(1)
+            a[1] := factorial(2)
+            a[2] := factorial(3)
+            a[3] := factorial(4)
+            a[4] := factorial(5) 
+        done
+"""
+
+text = r"""
+    function main() 
+    do
+        a := 0
+        function ggg()
+        do
+            function hhh()
+            do
+                a := 5
+            done
+            hhh()
+        done
+        
+        ggg()
     done
 """
 
@@ -245,5 +331,5 @@ parser = Parser(yacc_debug=True)
 ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 
-exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)
+exec = nodevisitor.NodeVisitor(parser._err_flag, parser.tokens)
 exec.visit(ast, entry_point=exec.scopes['__global'])
