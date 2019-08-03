@@ -134,3 +134,18 @@ def test_nested_functions():
     table = run_test(text)
     assert table['__global']['main']['a'] == [5]
 
+
+def sharp_operator():
+    text = r"""
+        function main(a, b, c)
+        do
+            a := 5
+            b := 1
+            a[3] := b
+            b[4] := 1000
+            c := a
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['c'] == [1006]
+

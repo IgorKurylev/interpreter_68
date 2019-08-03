@@ -129,7 +129,7 @@ class NodeVisitor:
                 new_name = str(cnt) + n.name.name
                 new_scope = copy.deepcopy(scope)  # correct copy of the scope (without references)
                 new_scope['0prev'] = scope['0prev']  # we need a reference here
-                new_scope['0self'] = scope['0self']   # only for optimization
+                new_scope['0self'] = scope['0self']  # only for optimization
                 entry_point[new_name] = new_scope
                 arglist = self.visit(n.args, entry_point)
                 if arglist:
@@ -151,7 +151,7 @@ class NodeVisitor:
                 cnt += self.sharp_operator(item)
             else:
                 if item not in self.tokens:
-                    cnt += int(item)  # TODO add references to another arrays
+                    cnt += int(item)
         return cnt
 
     def visit_UnaryOp(self, n: tree.UnaryOp, entry_point: dict, ):
@@ -188,7 +188,6 @@ class NodeVisitor:
             return
 
         return self.operators[n.op](left, right)
-
 
     def visit_Assignment(self, n: tree.Assignment, entry_point: dict):
         if type(n.rvalue) == tree.ID:  # preparing for right operand

@@ -1,163 +1,6 @@
 
 from parser import Parser
 import nodevisitor
-# text = r"""
-#     big main() begin
-#         rr.
-#         rr.
-#         go.
-#         rr.
-#         rr.
-#         go.
-#         rl.
-#         rl.
-#         go.
-#         go.
-#         print(_x_pos, _y_pos, _rotation).
-#         print(sonar).
-#         print(sonar).
-#         print(sonar).
-#
-#         field small tiny t << sonar.
-#     end.
-# """
-
-#
-# text = r"""
-#
-#
-#     big tst << 0.
-#     field small tiny t << {{1,2,3}, {1,2}}.
-# """
-#
-#
-# text = r"""
-#     field small tiny t << {{{1,2,3}, {1,2}, {1,2,3,4}}, {{1,2,3}, {1}}}.
-# """
-
-
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 1.
-#         f[] << 3.
-#     end.
-# """
-#
-# text = r"""
-#     big main() begin
-#         f << 3.
-#     end.
-# """
-#
-# text = r"""
-#
-# big main() begin
-#     err().
-# end.
-#
-# big err() begin
-#
-# end.
-#
-# """
-
-# text = r"""
-# big var << 0.
-# big var << 3.
-# """
-
-# text = r"""
-#     small var << 100000.
-# """
-
-# text = r"""
-#     small var << {1,2,3,4,5,6,7}.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#         print(f[0][1][5]).
-#     end.
-# """
-
-# text = r"""
-# big err() begin
-#
-# end.
-#
-# big main() begin
-#     small t << 3.
-#     err(t).
-# end.
-# """
-
-# text = r"""
-# big err(small t) begin
-#
-# end.
-#
-# big main() begin
-#     err().
-# end.
-# """
-
-# text = r"""
-#     big main(small t) begin
-#         big t << 4.
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[f]).
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[t()]).
-#
-#     end.
-# """
-
-# text = r"""
-#         big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[t]).
-#
-#     end.
-# """
-
-# text = r"""
-#
-#     big main() begin
-#       small t >> 10.
-#     end.
-# """
-#
-# text = r"""
-#     big main() begin
-#         until 1 do begin
-#
-#         end.
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         small t << 0.
-#         4.
-#         t.
-#     end.
-# """
-
 
 text = r"""
      function main() 
@@ -220,17 +63,7 @@ text = r"""
 #     done
 # """
 
-text = r"""
-    
-    function main(a, b, c)
-    do
-        a := 5
-        b := 1
-        a[3] := b
-        b[4] := 1000
-        a[3][2] := -1
-    done
-"""
+
 
 text = r"""
 
@@ -323,7 +156,17 @@ text = r"""
     done
 """
 
+text = r"""
 
+    function main(a, b, c)
+    do
+        a := 5
+        b := 1
+        a[3] := b
+        b[4] := 1000
+        print(#a)
+    done
+"""
 
 parser = Parser(yacc_debug=True)
 # with open("fib.txt", "r") as f:
