@@ -1,6 +1,6 @@
 
 from parser import Parser
-
+import nodevisitor
 # text = r"""
 #     big main() begin
 #         rr.
@@ -211,13 +211,19 @@ text = r"""
         done
     done
 """
+#
+# text = r"""
+#     function main(a, b, c)
+#     do
+#         var a
+#         a[1][2] := 5
+#     done
+# """
 
 text = r"""
-    function main(a, b, c)
-    do
-        var a
-        int b := dd()
-    done
+
+    int a
+    a[1][2][3][4][5]
 """
 
 
@@ -228,5 +234,5 @@ parser = Parser(yacc_debug=True)
 ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 
-# exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)
-# exec.visit(ast)
+exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)
+exec.visit(ast)

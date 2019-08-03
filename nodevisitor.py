@@ -39,6 +39,8 @@ class NodeVisitor:
 
         self.robot_operators = {}
 
+        self.stack = []
+
     def visit(self, node, scope_name='__global'):
         method = 'visit_' + node.__class__.__name__
         return getattr(self, method, self.generic_visit)(node, scope_name=scope_name)
@@ -62,8 +64,22 @@ class NodeVisitor:
                 return None
         return ref[1] if get_const else n.name
 
-    def visit_ArrayRef(self, n, scope_name='__global', get_reference=False):
-        pass
+    def visit_ArrayRef(self, n: tree.ArrayRef, scope_name='__global', get_reference=False):  # TODO test + debug
+        indices = []
+        cur_node = n
+        while type(cur_node) != tree.ID:
+            indices.append(self.visit(cur_node.subscript, scope_name=scope_name))
+            cur_node = cur_node.name
+        try:
+            array = self.visit_ID(cur_node, scope_name=scope_name, get_const=True)
+            if array is None:
+                return
+            for el in reversed(indices):
+                array = array[int(el)]
+
+            return array
+        except (ValueError, IndexError):
+            return 'undef'
 
     def _build_print_args(self, name, arr, scope_name, n, flag=False):
         pass
@@ -74,16 +90,16 @@ class NodeVisitor:
         else:
             pass
 
-    def sharp_operator(self, x: list):
+    def sharp_operator(self, x) -> int:  # sum of each element in array
         cnt = 0
         for item in x:
             if hasattr(item, '__iter__'):
                 cnt += self.sharp_operator(item)
             else:
-                cnt += int(item)
+                cnt += int(item)  # TODO add references to another arrays
         return cnt
 
-    def visit_UnaryOp(self, n, scope_name='__global'):
+    def visit_UnaryOp(self, n: tree.UnaryOp, scope_name='__global'):
         if n.op in self.robot_operators.keys():
             # if n.expr:
             #     print("Error at {}: invalid usage of robot operator {}".format(n.coord, n.op))
@@ -102,8 +118,11 @@ class NodeVisitor:
     def visit_BinaryOp(self, n, scope_name='__global'):
         pass
 
-    def visit_Assignment(self, n, scope_name='__global'):
-        pass
+    def visit_Assignment(self, n: tree.Assignment, scope_name='__global'):
+        if type(n.lvalue) == tree.ArrayRef:  # individual case for a[5] := ...
+            pass
+        else:
+            pass
 
     def _visit_expr(self, n, scope_name='__global'):
 
