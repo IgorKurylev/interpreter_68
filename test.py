@@ -221,9 +221,20 @@ text = r"""
 # """
 
 text = r"""
-
-    int a
-    a[1][2][3][4][5]
+    
+    
+    function p()
+    do
+        print(1,2,3)
+        
+    done
+    
+    function main(a, b, c)
+    do
+  
+        a := 5
+        a[0] := -5
+    done
 """
 
 
@@ -235,4 +246,4 @@ ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 
 exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)
-exec.visit(ast)
+exec.visit(ast, entry_point=exec.scopes['__global'])

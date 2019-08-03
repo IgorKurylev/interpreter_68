@@ -239,7 +239,7 @@ class Parser:
 
     def p_external_declaration_2(self, p):
         """ external_declaration    : declaration
-                                    | statement
+                                   
         """  # TODO remove statement
         p[0] = p[1]
 
