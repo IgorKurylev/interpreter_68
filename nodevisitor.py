@@ -19,7 +19,8 @@ class NodeVisitor:
                              'extra_int' : str,
                              'bool'      : bool,
                              'extra_bool': str,
-                             'robot'     : str,
+
+                             'cell'      : str,
                            }
 
         self.operators = {'-'  : lambda x, y: x -   y,
@@ -42,8 +43,12 @@ class NodeVisitor:
 
         self.stack = []
 
-    def visit(self, node, entry_point: dict):
+
+
+    def visit(self, node, entry_point: dict, get_obj=False):
         method = 'visit_' + node.__class__.__name__
+        if method == 'visit_ID' and get_obj:
+            return self.visit_ID(node, entry_point, get_obj=True)
         return getattr(self, method, self.generic_visit)(node, entry_point)
 
     def generic_visit(self, node, entry_point: dict):
@@ -108,10 +113,6 @@ class NodeVisitor:
         except ValueError:
             return None
 
-    def _build_print_args(self, name, arr, scope_name, n, flag=False):  # creates a list of printed objects
-
-        pass
-
     def visit_FuncCall(self, n: tree.FuncCall, entry_point: dict):
         if n.name.name == 'print':
             arglist = self.visit(n.args, entry_point)
@@ -163,37 +164,34 @@ class NodeVisitor:
             #     return self.robot_operators[n.op]()
             pass
         else:
-            if type(n.expr) == tree.ID:
-                val = self.visit_ID(n.expr, entry_point, get_obj=True)
-                if val is not None:
-                    return self.unary_operators[n.op](val)
-            else:
-                return self.unary_operators[n.op](self.visit(n.expr, entry_point))
+            val = self.visit(n.expr, entry_point, get_obj=True)
+            if val is None:
+                return
+            try:
+                return self.unary_operators[n.op](val)
+            except TypeError:
+                print(f'Error at {n.coord}: invalid unary expression')
+                self._error_flag = True
 
     def visit_BinaryOp(self, n: tree.BinaryOp, entry_point: dict):
-        if type(n.left) == tree.ID:
-            left = self.visit_ID(n.left, entry_point, get_obj=True)
-            if type(left) == list and len(left) == 1:
-                left = left[0]
-        else:
-            left = self.visit(n.left, entry_point)
-        if type(n.right) == tree.ID:
-            right = self.visit_ID(n.right, entry_point, get_obj=True)
-            if type(right) == list and len(right) == 1:
-                right = right[0]
-        else:
-            right = self.visit(n.right, entry_point)
+        left = self.visit(n.left, entry_point, get_obj=True)
+        if type(left) == list and len(left) == 1:
+            left = left[0]
+
+        right = self.visit(n.right, entry_point, get_obj=True)
+        if type(right) == list and len(right) == 1:
+            right = right[0]
 
         if None in (left, right):
             return
-
-        return self.operators[n.op](left, right)
+        try:
+            return self.operators[n.op](left, right)
+        except TypeError:
+            print(f'Error at {n.coord}: invalid binary expression')
+            self._error_flag = True
 
     def visit_Assignment(self, n: tree.Assignment, entry_point: dict):
-        if type(n.rvalue) == tree.ID:  # preparing for right operand
-            rvalue = self.visit_ID(n.rvalue, entry_point, get_obj=True)
-        else:
-            rvalue = self.visit(n.rvalue, entry_point)
+        rvalue = self.visit(n.rvalue, entry_point, get_obj=True)  # preparing for right operand
         if rvalue is None:
             return
 
@@ -229,20 +227,102 @@ class NodeVisitor:
                 scope[name] = rvalue
             return rvalue
 
-    def visit_Decl(self, n, entry_point: dict):
-        pass
+    def _cast_value(self, type_from, type_to, val):
+        if type_from == type_to:
+            return val
+        if type_from == 'cell':
+            if type_to in (bool, 'bool'):
+                if val in ('exit', 'empty'):
+                    return True
+                if val in ('box', 'wall'):
+                    return False
+                else:
+                    return 'undef'
+            if type_to in (int, 'int'):
+                if val == 'empty':
+                    return 0
+                if val == 'wall':
+                    return 'inf'
+                if val == 'exit':
+                    return '-inf'
+                if val == 'box':
+                    pass  # TODO cast box to it's weight
+        elif type_from in (int, 'int'):
+            if type_to == 'cell':
+                if val == 0:
+                    return 'empty'
+                if val == 'inf':
+                    return 'wall'
+                if val == '-inf':
+                    return 'exit'
+                if val == 'nan':
+                    return 'undef'
+                else:
+                    return 'box'
+            if type_to in ('bool', bool):
+                return bool(val)
+        elif type_from in (bool, 'bool'):
+            if type_to in ('int', int):
+                return int(val)
 
-    def visit_ExprList(self, n, entry_point: dict):
+        else:
+
+            return None
+
+    def _choose_type(self, ty):
+        if type(ty) == str:
+            if ty in ('wall', 'exit', 'empty', 'box'):
+                return 'cell'
+            if ty in ('inf', '-inf', 'nan'):
+                return int
+            if ty in ('true', 'false'):
+                return bool
+            else:
+                return 'undef'
+        else:
+            return type(ty)
+
+    def visit_Decl(self, n: tree.Decl, entry_point: dict):
+        var = entry_point.get(n.name)
+        if var is not None and type(var) != dict:
+            print(f'Error at {n.coord}: variable {n.name} is already defined')
+            self._error_flag = True
+            return
+        if n.init is None:
+            entry_point[n.name] = ['undef']
+        else:
+            val = self.visit(n.init, entry_point, get_obj=True)
+            if val is None:
+                return
+            if type(val) == list and len(val) == 1:
+                val = val[0]
+            if type(val) in self.basic_types.values() and n.type.name != 'var':
+                try:
+                    if n.type.name in ('extra_int', 'extra_bool', 'cell', 'int'):
+                        if n.type.name[:5] == 'extra_':  # remove extra_
+                            n.type.name = n.type.name[5:]
+                        type_from = self._choose_type(val)
+
+                        val = self._cast_value(type_from=type_from, type_to=n.type.name, val=val)
+                        entry_point[n.name] = [val]
+                        return
+                    entry_point[n.name] = [self.basic_types[n.type.name](val)]
+                except TypeError:
+                    print(f"Error at {n.coord}: cannot cast {val} to {n.type.name}")
+                    self._error_flag = True
+                    return
+            else:
+                entry_point[n.name] = [val]
+
+
+    def visit_ExprList(self, n: tree.ExprList, entry_point: dict) -> list:
         visited_subexprs = []
         for expr in n.exprs:
-            if type(expr) == tree.ID:
-                res = self.visit_ID(expr, entry_point, get_obj=True)
-            else:
-                res = self.visit(expr, entry_point)
+            res = self.visit(expr, entry_point, get_obj=True)
             visited_subexprs.append(res)
         return visited_subexprs
 
-    def visit_InitList(self, n, entry_point: dict):
+    def visit_InitList(self, n: tree.InitList, entry_point: dict) -> list:
         visited_subexprs = []
         for expr in n.exprs:
             visited_subexprs.append(self.visit(expr, entry_point))
@@ -305,16 +385,10 @@ class NodeVisitor:
         return [].extend(self.visit(param) for param in n.params)
 
     def visit_Return(self, n: tree.Return, entry_point: dict):
-        if type(n.expr) == tree.ID:
-            return self.visit_ID(n.expr, entry_point, get_obj=True)
-        else:
-            return self.visit(n.expr, entry_point)
+        return self.visit(n.expr, entry_point, get_obj=True)
 
     def visit_If(self, n: tree.If, entry_point: dict, execute_flag=False):
-        if type(n.cond) == tree.ID:
-            cond = self.visit_ID(n.cond, entry_point, get_obj=True)
-        else:
-            cond = self.visit(n.cond, entry_point)
+        cond = self.visit(n.cond, entry_point, get_obj=True)
         if cond is None:
             return
         if bool(cond) and cond != 'undef':
@@ -336,5 +410,23 @@ class NodeVisitor:
         else:
             return
 
-    def visit_While(self, n, entry_point: dict):
-        pass
+    def visit_While(self, n: tree.While, entry_point: dict):
+        cond = self.visit(n.cond, entry_point, get_obj=True)
+        if cond is None:
+            return
+        if type(cond) == list and cond == [0]:
+            cond = False
+        while bool(cond):
+            if cond == 'undef':
+                return
+            res = self.visit(n.stmt, entry_point)
+            if type(n.stmt) == tree.Return:
+                return res
+            cond = self.visit(n.cond, entry_point, get_obj=True)
+            if type(cond) == list and cond == [0]:
+                cond = False
+        else:
+            if n.finish is not None:
+                res = self.visit(n.finish, entry_point)
+                if type(n.finish) == tree.Return:
+                    return res

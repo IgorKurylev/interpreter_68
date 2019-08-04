@@ -135,7 +135,7 @@ def test_nested_functions():
     assert table['__global']['main']['a'] == [5]
 
 
-def sharp_operator():
+def test_sharp_operator():
     text = r"""
         function main(a, b, c)
         do
@@ -143,9 +143,47 @@ def sharp_operator():
             b := 1
             a[3] := b
             b[4] := 1000
-            c := a
+            c := #a
         done
     """
     table = run_test(text)
     assert table['__global']['main']['c'] == [1006]
+
+
+def test_while():
+    text = r"""
+
+        function main(a, b, c)
+        do
+            a := 0
+            while a != 5
+            do
+                a := a + 1
+            done
+            finish
+                a := a + 5
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == [10]
+
+
+def test_casts():
+    text = r"""
+
+        function main()
+        do
+            bool a := 5
+            int b := a
+            cell c := 0
+            bool d := exit
+            int e := empty
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == [True]
+    assert table['__global']['main']['b'] == [1]
+    assert table['__global']['main']['c'] == ['empty']
+    assert table['__global']['main']['d'] == [True]
+    assert table['__global']['main']['e'] == [0]
 

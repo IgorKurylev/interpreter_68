@@ -168,9 +168,43 @@ text = r"""
     done
 """
 
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 0
+        while a != 5
+        do
+            a := a + 1
+        done
+        finish
+            a := a + 5
+    done
+"""
+
+text = r"""
+
+    function main()
+    do
+        bool a := 5
+        int b := a
+        cell c := 0
+        bool d := exit
+        int e := empty
+    done
+"""
+
+# text = r"""
+#
+#     function main()
+#     do
+#         bool a := 5
+#         int b := a
+#     done
+# """
+
+
 parser = Parser(yacc_debug=True)
-# with open("fib.txt", "r") as f:
-#      ast = parser.parse(f.read(), filename='test3.txt', debuglevel=False)
 ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 

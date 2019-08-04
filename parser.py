@@ -657,7 +657,7 @@ class Parser:
                         |  EXIT
         """
         p[0] = tree.Constant(
-            'robot', p[1], self._token_coord(p, 1))
+            'cell', p[1], self._token_coord(p, 1))
 
     def p_constant_3(self, p):
         """ constant    : INF
