@@ -188,16 +188,32 @@ def test_casts():
     assert table['__global']['main']['e'] == [0]
 
 
+def test_casts_2():  # cast empty to 0
+    text = r"""
+        function main()
+        do
+            a := 1 + empty
+            b := true ^ exit
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == [1]
+    assert table['__global']['main'].get('b') is None  # will not create b because of undefined cast
+
+
 def test_move_operators():  # forward empty/false <=> forward 0
     text = r"""
         function main()
         do
             right
             forward empty
+            right
+            load 1
+            forward 1
+            right
+            load 1
+            forward 1
             forward false
-            right
-            forward 2
-            right
             forward 1
         done
     """
@@ -206,8 +222,62 @@ def test_move_operators():  # forward empty/false <=> forward 0
 
 
 def test_load_drop():
-    pass
+    text = r"""
+        function main()
+        do
+            right
+            right
+            load 1
+            forward 1
+            right
+            load 1
+            forward 1
+            left
+            drop 1
+            left
+            drop 1
+            left
+            left
+            drop 1
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['_map'][3][0] == [0, 'inf', 1, 'inf', 'inf', 1]
+    assert table['__global']['_pos'] == [3, 0, 5]
 
 
-def test_look_test():
-    pass
+def test_operator_test():
+    text = r"""
+        function main()
+        do
+            a := test
+            right
+            a[1] := test
+            right
+            load 1
+            a[2] := test
+            right
+            a[3] := test
+            right
+            a[4] := test
+            right
+            a[5] := test
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == ['undef', 'inf', 'inf', 'inf', 'undef', 'inf']
+
+
+def test_operator_look():
+    text = r"""
+        function main()
+        do
+            a := look
+            right
+            right
+            load 1
+            a[1] := look
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == ['inf', 1]

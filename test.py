@@ -197,7 +197,11 @@ text = r"""
 text = r"""
     function main()
     do
-        int e := empty
+        a := look
+        right
+        right
+        load 1
+        a[1] := look
     done
 """
 

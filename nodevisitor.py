@@ -41,7 +41,14 @@ class NodeVisitor:
 
         self.robot_operators = {'left' : self._left_op,
                                 'right': self._right_op,
+                                'test' : self._test_op,
+                                'look' : self._look_op,
                                 }
+        self.operators_with_params = {'forward' : self._go_op,
+                                      'backward': self._go_op,
+                                      'load'    : self._load_drop,
+                                      'drop'    : self._load_drop,
+                                     }
 
         self._weight = 0
         self._max_weight = 10
@@ -137,17 +144,8 @@ class NodeVisitor:
             return 1
         return 0
 
-    def _go_op(self, number, coords, backward=False) -> bool:  # TODO add bad chance
-        try:
-            if type(number) == list and len(number) == 1:
-                number = number[0]
-            type_from = self._choose_type(number)
-            number = self._cast_value(type_from=type_from, type_to=int, val=number)
-            number = int(number)
-        except (ValueError, TypeError):
-            print(f"Error at {coords}: invalid usage of forward/backward operator")
-            self._error_flag = True
-            return
+    def _go_op(self, number, backward=False) -> bool:  # TODO add bad chance
+
         for _ in range(number):
             res = self._make_a_step(backward)
             if res == -1:
@@ -156,30 +154,85 @@ class NodeVisitor:
                 return False
         return True
 
-    def _left_op(self):  # TODO add max weight
+    def _left_op(self):
+        if self._weight >= self._max_weight:
+            return False
         rotation = self.scopes['__global']['_pos'][2]
         self.scopes['__global']['_pos'][2] = (rotation - 1) % 6
+        return True
 
     def _right_op(self):
+        if self._weight >= self._max_weight:
+            return False
         rotation = self.scopes['__global']['_pos'][2]
         self.scopes['__global']['_pos'][2] = (rotation + 1) % 6
+        return True
 
-    def _load_op(self):
+    def _load_drop(self, number, drop=False):
+        assert number >= 0
+
         y_pos = self.scopes['__global']['_pos'][0]
         x_pos = self.scopes['__global']['_pos'][1]
         rotation = self.scopes['__global']['_pos'][2]
+        _map = self.scopes['__global']['_map']
 
-        #x_next, y_next = self._next_cell()
-        pass
-
-    def _drop_op(self):
-        pass
-
-    def _look_op(self):
-        pass
+        x_next, y_next = self._next_cell(x_pos, y_pos, rotation, ignore_flag=True)
+        if x_next == -1 and y_next == -1 or _map[y_next][x_next][rotation] == 0 and drop is False:
+            return 'undef'
+        if _map[y_pos][x_pos][rotation] == 'inf':                                      # wall case
+            return False
+        if _map[y_pos][x_pos][rotation] >= 0 and drop is True:
+            _map[y_pos][x_pos][rotation] += number                                    # drop number of boxes to current cell
+            _map[y_next][x_next][(rotation + 3) % 6] = _map[y_pos][x_pos][rotation]   # drop number of boxes from another side
+            self._weight -= number
+            return True
+        if _map[y_pos][x_pos][rotation] > 0 and drop is False:
+            if self._weight == self._max_weight:
+                return False
+            for _ in range(number):
+                if _map[y_pos][x_pos][rotation] == 0:
+                    return True
+                self._weight += 1
+                _map[y_pos][x_pos][rotation] -= 1                                        # remove one box from current cell
+                _map[y_next][x_next][(rotation + 3) % 6] = _map[y_pos][x_pos][rotation]  # remove this box from another side
+            return True
 
     def _test_op(self):
-        pass
+        y_pos = self.scopes['__global']['_pos'][0]
+        x_pos = self.scopes['__global']['_pos'][1]
+        rotation = self.scopes['__global']['_pos'][2]
+        _map = self.scopes['__global']['_map']
+
+        while _map[y_pos][x_pos][rotation] == 0 or _map[y_pos][x_pos][rotation] == '-inf':
+            x_prev, y_prev = x_pos, y_pos
+            x_pos, y_pos = self._next_cell(x_pos, y_pos, rotation)
+            if x_pos == x_prev and y_pos == y_prev:
+                return _map[y_pos][x_pos][rotation]  # returns 'inf' if wall and weight of box if box
+            if x_pos == -1 and y_pos == -1:
+                return 'undef'                       # no walls or boxes towards this direction
+        else:
+            return _map[y_pos][x_pos][rotation]      # if nearest obstacle is a next cell
+
+    def _look_op(self):
+        """
+        :return: inf if exit towards current direction
+                 or number of steps towards the nearest obstacle
+        """
+        y_pos = self.scopes['__global']['_pos'][0]
+        x_pos = self.scopes['__global']['_pos'][1]
+        rotation = self.scopes['__global']['_pos'][2]
+        _map = self.scopes['__global']['_map']
+
+        cnt = 0
+        while _map[y_pos][x_pos][rotation] == 0 or _map[y_pos][x_pos][rotation] == '-inf':
+            x_prev, y_prev = x_pos, y_pos
+            x_pos, y_pos = self._next_cell(x_pos, y_pos, rotation)
+            if x_pos == x_prev and y_pos == y_prev:
+                return cnt
+            if x_pos == -1 and y_pos == -1:
+                return 'inf'                       # no walls or boxes towards this direction
+            cnt += 1
+        return cnt
 
     def visit(self, node, entry_point: dict, get_obj=False):
         """
@@ -221,7 +274,7 @@ class NodeVisitor:
                 self._error_flag = True
             return
 
-    def visit_ArrayRef(self, n: tree.ArrayRef, entry_point: dict, get_reference=False):  # TODO test + debug
+    def visit_ArrayRef(self, n: tree.ArrayRef, entry_point: dict, get_reference=False):
         """
         :param get_reference: for assignment we need a reference
         (it's enough only to return an index before last)
@@ -301,13 +354,26 @@ class NodeVisitor:
 
     def visit_UnaryOp(self, n: tree.UnaryOp, entry_point: dict, ):
         if n.op in self.robot_operators.keys():
-            if n.expr:
-                print("Error at {}: invalid usage of robot operator {}".format(n.coord, n.op))
-                self._error_flag = True
             if not self._error_flag:
                 return self.robot_operators[n.op]()
-        elif n.op in ('forward', 'backward'):
-            return self._go_op(self.visit(n.expr, entry_point, get_obj=True), n.coord, n.op == 'backward')
+        elif n.op in self.operators_with_params.keys():
+            number = self.visit(n.expr, entry_point, get_obj=True)
+            if number is None:
+                return
+            try:
+                if type(number) == list and len(number) == 1:
+                    number = number[0]
+                type_from = self._choose_type(number)
+                number = self._cast_value(type_from=type_from, type_to=int, val=number)
+                number = int(number)
+                if number < 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                print(f"Error at {n.coord}: invalid usage of forward/backward operator")
+                self._error_flag = True
+                return
+            flag = n.op == 'backward' or n.op == 'drop'
+            return self.operators_with_params[n.op](number, flag)
         else:
             val = self.visit(n.expr, entry_point, get_obj=True)
             if val is None:
@@ -319,16 +385,23 @@ class NodeVisitor:
                 self._error_flag = True
 
     def visit_BinaryOp(self, n: tree.BinaryOp, entry_point: dict):
-        left = self.visit(n.left, entry_point, get_obj=True)
-        if type(left) == list and len(left) == 1:
+        left = self.visit(n.left, entry_point, get_obj=True)  # preparing left operand
+        if type(left) == list and len(left) == 1:             # constant case
             left = left[0]
 
-        right = self.visit(n.right, entry_point, get_obj=True)
-        if type(right) == list and len(right) == 1:
+        right = self.visit(n.right, entry_point, get_obj=True)  # preparing right operand
+        if type(right) == list and len(right) == 1:             # constant case
             right = right[0]
 
         if None in (left, right):
-            return
+            return                                              # error is already occured
+
+        type_left = self._choose_type(left)
+        type_right = self._choose_type(right)
+        if type_left in (int, 'int') and type_right != list:
+            right = self._cast_value(type_from=type_right, type_to=type_left, val=right)
+        if type_right in (int, 'int') and type_left != list:
+            left = self._cast_value(type_from=type_left, type_to=type_right, val=left)
         try:
             return self.operators[n.op](left, right)
         except TypeError:
