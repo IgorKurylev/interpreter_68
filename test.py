@@ -194,14 +194,12 @@ text = r"""
     done
 """
 
-# text = r"""
-#
-#     function main()
-#     do
-#         bool a := 5
-#         int b := a
-#     done
-# """
+text = r"""
+    function main()
+    do
+        int e := empty
+    done
+"""
 
 
 parser = Parser(yacc_debug=True)

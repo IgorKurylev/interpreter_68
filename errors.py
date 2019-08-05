@@ -35,6 +35,25 @@ text = r"""
     done
 """
 
+# undefined cast
+text = r"""
+
+    function main()
+    do
+        bool a := false
+        cell b := a
+    done
+"""
+
+# invalid usage of forward operator (forward -inf)
+text = r"""
+
+    function main()
+    do
+        forward exit
+    done
+"""
+
 parser = Parser(yacc_debug=True)
 ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)

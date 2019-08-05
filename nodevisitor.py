@@ -1,25 +1,25 @@
 import tree
 import copy
+from maze import _map
 
 
 class NodeVisitor:
+    MAX_WEIGHT = 10
 
     def __init__(self, error_flag, tokens):
         self._error_flag = error_flag
         self.tokens = tuple(token.lower() for token in tokens)
 
-
-        self.scopes = {'__global' : {}
-
+        self.scopes = {'__global': {'_map': _map,      # maze map
+                                    '_pos': [0, 0, 0]  # robot coordinates and direction
+                                    }                  # in format [y_pos, x_pos, rotation]
                        }
-
         self.scopes['__global']['0prev'] = self.scopes
 
         self.basic_types = { 'int'       : int,
                              'extra_int' : str,
                              'bool'      : bool,
                              'extra_bool': str,
-
                              'cell'      : str,
                            }
 
@@ -39,13 +39,155 @@ class NodeVisitor:
                                 '#': self.sharp_operator,
                                 }
 
-        self.robot_operators = {}
+        self.robot_operators = {'left' : self._left_op,
+                                'right': self._right_op,
+                                }
 
-        self.stack = []
+        self._weight = 0
+        self._max_weight = 10
 
+    def _rotation_to_exit(self, x_pos, y_pos, rotation) -> list:  # gives an information about exit in each cell
+        _map = self.scopes['__global']['_map']                    # returns list with 1st element is True/False if exit is reachable/unreachable
+        assert _map[y_pos][x_pos]                                 # other elements in list are directions to exit or another cell
 
+        exit_cells = ()
+        if x_pos == 0 and y_pos % 2 == 0:
+            if y_pos == 0:
+                exit_cells = (0, 1, 4, 5)
+            elif y_pos == len(_map) - 1:
+                exit_cells = (2, 3, 4, 5)
+            else:
+                exit_cells = (4, 5)
+        elif x_pos == len(_map[0]) - 1 and y_pos % 2 == 1:
+            if y_pos == 1:
+                exit_cells = (0, 1, 2)
+            elif y_pos == len(_map) - 2:
+                exit_cells = (1, 2, 3)
+            else:
+                exit_cells = (1, 2)
+        elif y_pos == 0:
+            exit_cells = (0, 1, 5)
+        elif y_pos == 1:
+            exit_cells = [0]
+        elif y_pos == len(_map) - 1:
+            exit_cells = (2, 3, 4)
+        elif y_pos == len(_map) - 2:
+            exit_cells = [3]
+
+        res = [len(exit_cells) != 0 and rotation in exit_cells]  # first element is False if there is no direction to exit
+        for item in exit_cells:
+            if _map[y_pos][x_pos][item] in ('-inf', 0):  # if there is a wall, we will not return this direction
+                res.append(item)
+        return res
+
+    def _next_cell(self, x_pos, y_pos, rotation, ignore_flag=False):  # returns coordinates if robot will make a step in current direction
+        _map = self.scopes['__global']['_map']                        # in format [x_pos, y_pos]
+        assert _map[y_pos][x_pos]
+
+        exit_cells = self._rotation_to_exit(x_pos, y_pos, rotation)
+
+        if rotation in exit_cells[1:]:
+            return [-1, -1]      # returns [-1, -1] if robot will exit from the maze
+        if not ignore_flag:
+            if exit_cells[0]:        # returns current coordinates if there is a wall/box
+                return [x_pos, y_pos]
+
+        if rotation == 0:
+            return [x_pos, y_pos - 2]
+        if rotation == 3:
+            return [x_pos, y_pos + 2]
+
+        if y_pos % 2 == 0:
+            if rotation == 1:
+                return [x_pos, y_pos - 1]
+            elif rotation == 2:
+                return [x_pos, y_pos + 1]
+            elif rotation == 4:
+                return [x_pos - 1, y_pos + 1]
+            else:
+                return [x_pos - 1, y_pos - 1]
+
+        if y_pos % 2 == 1:
+            if rotation == 1:
+                return [x_pos + 1, y_pos - 1]
+            elif rotation == 2:
+                return [x_pos + 1, y_pos + 1]
+            elif rotation == 4:
+                return [x_pos, y_pos + 1]
+            else:
+                return [x_pos, y_pos - 1]
+
+    def _make_a_step(self, backward=False) -> int:
+        _y_pos = self.scopes['__global']['_pos'][0]
+        _x_pos = self.scopes['__global']['_pos'][1]
+        _rotation = self.scopes['__global']['_pos'][2]
+        if backward:
+            _rotation = (_rotation + 3) % 6
+
+        next = self._next_cell(_x_pos, _y_pos, _rotation)
+        if next == [-1, -1]:  # go out from the maze
+            self.scopes['__global']['_pos'] = [-1, -1, -1]
+            return -1
+
+        if next == [_x_pos, _y_pos]:  # wall case
+            return 0
+
+        if self.scopes['__global']['_map'][_y_pos][_x_pos][_rotation] == 0:  # make a step
+            self.scopes['__global']['_pos'] = [next[1], next[0], _rotation]
+            return 1
+        return 0
+
+    def _go_op(self, number, coords, backward=False) -> bool:  # TODO add bad chance
+        try:
+            if type(number) == list and len(number) == 1:
+                number = number[0]
+            type_from = self._choose_type(number)
+            number = self._cast_value(type_from=type_from, type_to=int, val=number)
+            number = int(number)
+        except (ValueError, TypeError):
+            print(f"Error at {coords}: invalid usage of forward/backward operator")
+            self._error_flag = True
+            return
+        for _ in range(number):
+            res = self._make_a_step(backward)
+            if res == -1:
+                return True
+            if res == 0:
+                return False
+        return True
+
+    def _left_op(self):  # TODO add max weight
+        rotation = self.scopes['__global']['_pos'][2]
+        self.scopes['__global']['_pos'][2] = (rotation - 1) % 6
+
+    def _right_op(self):
+        rotation = self.scopes['__global']['_pos'][2]
+        self.scopes['__global']['_pos'][2] = (rotation + 1) % 6
+
+    def _load_op(self):
+        y_pos = self.scopes['__global']['_pos'][0]
+        x_pos = self.scopes['__global']['_pos'][1]
+        rotation = self.scopes['__global']['_pos'][2]
+
+        #x_next, y_next = self._next_cell()
+        pass
+
+    def _drop_op(self):
+        pass
+
+    def _look_op(self):
+        pass
+
+    def _test_op(self):
+        pass
 
     def visit(self, node, entry_point: dict, get_obj=False):
+        """
+        :param node: current ast node to visit
+        :param entry_point: current scope
+        :param get_obj: need only if node is tree.Id to call visit_ID with param get_obj=True
+        :return: return value from visiting current node
+        """
         method = 'visit_' + node.__class__.__name__
         if method == 'visit_ID' and get_obj:
             return self.visit_ID(node, entry_point, get_obj=True)
@@ -59,7 +201,9 @@ class NodeVisitor:
             return (self.visit(c, entry_point) for c_name, c in node.children())
 
     def visit_Constant(self, n, entry_point: dict):
-        return self.basic_types[n.type](n.value)
+        if n.value == 'false':
+            return False
+        return self.basic_types[n.type](n.value)  # cast value in proper way
 
     def visit_ID(self, n: tree.ID, entry_point: dict, get_obj=False, no_msg=False, get_scope=False):  # if get_obj is true we need a variable or a scope
         cur = entry_point                                                                            # else we need only to check if object exist
@@ -157,12 +301,13 @@ class NodeVisitor:
 
     def visit_UnaryOp(self, n: tree.UnaryOp, entry_point: dict, ):
         if n.op in self.robot_operators.keys():
-            # if n.expr:
-            #     print("Error at {}: invalid usage of robot operator {}".format(n.coord, n.op))
-            #     self._error_flag = True
-            # if not self._error_flag:
-            #     return self.robot_operators[n.op]()
-            pass
+            if n.expr:
+                print("Error at {}: invalid usage of robot operator {}".format(n.coord, n.op))
+                self._error_flag = True
+            if not self._error_flag:
+                return self.robot_operators[n.op]()
+        elif n.op in ('forward', 'backward'):
+            return self._go_op(self.visit(n.expr, entry_point, get_obj=True), n.coord, n.op == 'backward')
         else:
             val = self.visit(n.expr, entry_point, get_obj=True)
             if val is None:
@@ -228,7 +373,7 @@ class NodeVisitor:
             return rvalue
 
     def _cast_value(self, type_from, type_to, val):
-        if type_from == type_to:
+        if type_from == type_to or type_from in ('int', int) and type_to in ('int', int):
             return val
         if type_from == 'cell':
             if type_to in (bool, 'bool'):
@@ -264,9 +409,7 @@ class NodeVisitor:
         elif type_from in (bool, 'bool'):
             if type_to in ('int', int):
                 return int(val)
-
         else:
-
             return None
 
     def _choose_type(self, ty):
@@ -302,8 +445,9 @@ class NodeVisitor:
                         if n.type.name[:5] == 'extra_':  # remove extra_
                             n.type.name = n.type.name[5:]
                         type_from = self._choose_type(val)
-
                         val = self._cast_value(type_from=type_from, type_to=n.type.name, val=val)
+                        if val is None:
+                            raise TypeError
                         entry_point[n.name] = [val]
                         return
                     entry_point[n.name] = [self.basic_types[n.type.name](val)]

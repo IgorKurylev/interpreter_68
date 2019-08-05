@@ -187,3 +187,27 @@ def test_casts():
     assert table['__global']['main']['d'] == [True]
     assert table['__global']['main']['e'] == [0]
 
+
+def test_move_operators():  # forward empty/false <=> forward 0
+    text = r"""
+        function main()
+        do
+            right
+            forward empty
+            forward false
+            right
+            forward 2
+            right
+            forward 1
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['_pos'] == [3, 0, 3]
+
+
+def test_load_drop():
+    pass
+
+
+def test_look_test():
+    pass
