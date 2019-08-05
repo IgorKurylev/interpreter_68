@@ -1,163 +1,6 @@
 
 from parser import Parser
-
-# text = r"""
-#     big main() begin
-#         rr.
-#         rr.
-#         go.
-#         rr.
-#         rr.
-#         go.
-#         rl.
-#         rl.
-#         go.
-#         go.
-#         print(_x_pos, _y_pos, _rotation).
-#         print(sonar).
-#         print(sonar).
-#         print(sonar).
-#
-#         field small tiny t << sonar.
-#     end.
-# """
-
-#
-# text = r"""
-#
-#
-#     big tst << 0.
-#     field small tiny t << {{1,2,3}, {1,2}}.
-# """
-#
-#
-# text = r"""
-#     field small tiny t << {{{1,2,3}, {1,2}, {1,2,3,4}}, {{1,2,3}, {1}}}.
-# """
-
-
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 1.
-#         f[] << 3.
-#     end.
-# """
-#
-# text = r"""
-#     big main() begin
-#         f << 3.
-#     end.
-# """
-#
-# text = r"""
-#
-# big main() begin
-#     err().
-# end.
-#
-# big err() begin
-#
-# end.
-#
-# """
-
-# text = r"""
-# big var << 0.
-# big var << 3.
-# """
-
-# text = r"""
-#     small var << 100000.
-# """
-
-# text = r"""
-#     small var << {1,2,3,4,5,6,7}.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#         print(f[0][1][5]).
-#     end.
-# """
-
-# text = r"""
-# big err() begin
-#
-# end.
-#
-# big main() begin
-#     small t << 3.
-#     err(t).
-# end.
-# """
-
-# text = r"""
-# big err(small t) begin
-#
-# end.
-#
-# big main() begin
-#     err().
-# end.
-# """
-
-# text = r"""
-#     big main(small t) begin
-#         big t << 4.
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[f]).
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[t()]).
-#
-#     end.
-# """
-
-# text = r"""
-#         big main() begin
-#         field small tiny f << 5.
-#
-#         print(f[t]).
-#
-#     end.
-# """
-
-# text = r"""
-#
-#     big main() begin
-#       small t >> 10.
-#     end.
-# """
-#
-# text = r"""
-#     big main() begin
-#         until 1 do begin
-#
-#         end.
-#     end.
-# """
-
-# text = r"""
-#     big main() begin
-#         small t << 0.
-#         4.
-#         t.
-#     end.
-# """
-
+import nodevisitor
 
 text = r"""
      function main() 
@@ -211,22 +54,161 @@ text = r"""
         done
     done
 """
+#
+# text = r"""
+#     function main(a, b, c)
+#     do
+#         var a
+#         a[1][2] := 5
+#     done
+# """
+
+
 
 text = r"""
+
     function main(a, b, c)
     do
-        var a
-        int b := dd()
+        a := 3
+        b := 4
+        if 3 + 2
+        do
+            print(666)
+        done
+        eldef
+        do
+            
+        done
+            
+
+    done
+"""
+
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 3
+        b := 4
+        print(a+b)
+
+
+    done
+"""
+
+text = r"""
+    function fib(n)
+    do
+        if n = 0
+            return n
+        if n = 1
+            return n
+        return fib(n-2) + fib(n-1)
+    done
+
+    function main()
+    do
+        a := 0
+        a[0] := fib(1)
+        a[1] := fib(2)
+        a[2] := fib(3)
+        a[3] := fib(4)
+        a[4] := fib(5) 
+        
+    done
+"""
+
+text = r"""
+        function factorial(n)
+        do
+            if n = 0
+                return n
+            if n = 1
+                return n
+            return n * factorial(n-1)
+        done
+
+        function main()
+        do
+            a := 0
+            a[0] := factorial(1)
+            a[1] := factorial(2)
+            a[2] := factorial(3)
+            a[3] := factorial(4)
+            a[4] := factorial(5) 
+        done
+"""
+
+text = r"""
+    function main() 
+    do
+        a := 0
+        function ggg()
+        do
+            function hhh()
+            do
+                a := 5
+            done
+            hhh()
+        done
+        
+        ggg()
+    done
+"""
+
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 5
+        b := 1
+        a[3] := b
+        b[4] := 1000
+        print(#a)
+    done
+"""
+
+text = r"""
+
+    function main(a, b, c)
+    do
+        a := 0
+        while a != 5
+        do
+            a := a + 1
+        done
+        finish
+            a := a + 5
+    done
+"""
+
+text = r"""
+
+    function main()
+    do
+        bool a := 5
+        int b := a
+        cell c := 0
+        bool d := exit
+        int e := empty
+    done
+"""
+
+text = r"""
+    function main()
+    do
+        a := look
+        right
+        right
+        load 1
+        a[1] := look
     done
 """
 
 
-
 parser = Parser(yacc_debug=True)
-# with open("fib.txt", "r") as f:
-#      ast = parser.parse(f.read(), filename='test3.txt', debuglevel=False)
 ast = parser.parse(text, filename='<none>', debuglevel=False)
 ast.show(attrnames=True, showcoord=True)
 
-# exec = nodevisitor.NodeVisitor(parser._err_flag, parser.func_dict)
-# exec.visit(ast)
+exec = nodevisitor.NodeVisitor(parser._err_flag, parser.tokens)
+exec.visit(ast, entry_point=exec.scopes['__global'])
