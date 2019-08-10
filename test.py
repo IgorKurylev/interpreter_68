@@ -202,8 +202,199 @@ text = r"""
         right
         load 1
         a[1] := look
+        
+        FINISH := -1
+        FINISH[1] := -1
+        FINISH[2] := -1
     done
 """
+
+
+text = r"""
+    var _stack
+    int _head := 0
+    
+    
+    function stack_push(el)
+    do
+        _stack[_head] := el
+        _head := _head + 1 
+    done
+    
+    function stack_pop()
+    do
+        if _head = 0
+            return undef
+        _head := _head - 1
+        return _stack[_head]
+    done
+    
+    function main()
+    do
+        
+    done
+    
+"""
+
+# in this implementation stack is array: [size, el1, el2, ...]
+text = r"""
+    function push(stack, el)
+    do
+        head := stack[0]
+        stack[0] := head + 1
+        stack[head + 1] := el
+        return stack
+    done
+    
+    function pop(stack)
+    do
+        head := stack[0]
+        var res
+        res[1] := stack
+        if head = 0
+            return res
+        res[0] := stack[head]
+        stack[0] := head - 1
+        res[1] := stack
+        return res
+    done
+    
+    function _init(_y, _x, _dir)
+    do
+        _pos[0] := _y
+        _pos[1] := _x
+        _pos[2] := _dir
+    done
+    
+    function is_visited(visited, coords)
+    do
+        cnt := visited[0]
+        while cnt   
+        do     
+            if visited[cnt] = coords
+                return true
+            cnt := cnt - 1
+        done
+   
+        return false
+    done
+    
+    function rotate_180()
+    do
+        right
+        right
+        right
+    done
+    
+    function get_neighbours(visited)
+    do
+        res := 0
+        cnt := 0
+        while cnt != 6
+        do
+            if look = inf
+            do
+                while _pos != FINISH
+                do
+                    print(_pos, FINISH)
+                    forward 1
+                done
+                return res
+            done
+            if look > 0
+            do
+                forward 1
+                b := is_visited(visited, get_coords())
+                if b = false
+                    res := push(res, _pos[2])
+                backward 1
+                rotate_180()
+            done
+            right
+            cnt := cnt + 1
+        done
+        return res
+    done
+    
+    function get_coords()
+    do
+        res := _pos[0]
+        res[1] := _pos[1]
+        return res
+    done
+    
+    var FINISH
+    
+    function main()
+    do
+        FINISH[0] := -1
+        FINISH[1] := -1
+        FINISH[2] := -1
+        
+        _init(4, 1, 0)
+        
+        visited := 0
+        visited := push(visited, get_coords())
+        stack := 0
+        
+        cnt := 0
+        coords := 0
+        while _pos != FINISH
+        do
+            neighbours := get_neighbours(visited)
+            if _pos = FINISH
+                return 0
+            
+            if neighbours[0] > 0
+            do
+                stack := push(stack, _pos)
+                res := pop(neighbours)
+                next := res[0]
+                neighbours := res[1]
+                while _pos[2] != next
+                    right
+                forward 1
+                
+                visited := push(visited, get_coords())
+            done
+            eldef
+            do
+                if stack[0] = 0
+                    return 1
+                res := pop(stack)
+                _pos := res[0]
+                stack := res[1]
+            done
+            cnt := cnt + 1
+        done
+    done
+"""
+
+# text = r"""
+#     function _init(_y, _x, _dir)
+#     do
+#         _pos[0] := _y
+#         _pos[1] := _x
+#         _pos[2] := _dir
+#     done
+#
+#     function main()
+#     do
+#         _init(4, 1, 5)
+#         print(look)
+#     done
+# """
+
+# text = r"""
+#     var FINISH
+#
+#     function main()
+#     do
+#         FINISH[0] := -1
+#         FINISH[1] := -1
+#         FINISH[2] := -1
+#     done
+# """
 
 
 parser = Parser(yacc_debug=True)

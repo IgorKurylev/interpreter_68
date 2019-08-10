@@ -47,10 +47,21 @@ text = r"""
 
 # invalid usage of forward operator (forward -inf)
 text = r"""
-
     function main()
     do
         forward exit
+    done
+"""
+
+# invalid index in array reference
+text = r"""
+    function main()
+    do
+        a := 1
+        a[3] := 10
+        
+        var b
+        b[a] := 3
     done
 """
 

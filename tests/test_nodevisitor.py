@@ -33,19 +33,19 @@ def test_references_1():
     assert table['__global']['main']['b'] == [1, 'undef', -1, 'undef', 1000]
 
 
-def test_references_2():
-    text = r"""
-
-            function main()
-            do
-                a := 5
-                b := a
-                b := 6
-            done
-        """
-    table = run_test(text)
-    assert table['__global']['main']['a'] == [6]
-    assert table['__global']['main']['b'] == [6]
+# def test_references_2():
+#     text = r"""
+#
+#             function main()
+#             do
+#                 a := 5
+#                 b := a
+#                 b := 6
+#             done
+#         """
+#     table = run_test(text)
+#     assert table['__global']['main']['a'] == [6]
+#     assert table['__global']['main']['b'] == [6]
 
 
 def test_references_3():
@@ -132,7 +132,7 @@ def test_nested_functions():
         done
     """
     table = run_test(text)
-    assert table['__global']['main']['a'] == [5]
+    assert table['__global']['main']['a'] == 5
 
 
 def test_sharp_operator():
@@ -165,7 +165,7 @@ def test_while():
         done
     """
     table = run_test(text)
-    assert table['__global']['main']['a'] == [10]
+    assert table['__global']['main']['a'] == 10
 
 
 def test_casts():
@@ -281,3 +281,88 @@ def test_operator_look():
     """
     table = run_test(text)
     assert table['__global']['main']['a'] == ['inf', 1]
+
+
+def test_stack_1():
+    text = r"""
+        var _stack
+        int _head := 0
+
+
+        function stack_push(el)
+        do
+            _stack[_head] := el
+            _head := _head + 1 
+        done
+
+        function stack_pop()
+        do
+            if _head = 0
+                return undef
+            _head := _head - 1
+            return _stack[_head]
+        done
+
+        function main()
+        do
+            stack_push(1)
+            stack_push(2)
+            stack_push(3)
+
+            a := stack_pop()
+            a[1] := stack_pop()
+            a[2] := stack_pop()
+        done
+
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == [3, 2, 1]
+
+
+def test_stack_2():
+    # in this implementation stack is array: [size, el1, el2, ...]
+    text = r"""
+        function push(stack, el)
+        do
+            head := stack[0]
+            stack[0] := head + 1
+            stack[head + 1] := el
+            return stack
+        done
+
+        function pop(stack)
+        do
+            head := stack[0]
+            var res
+            res[1] := stack
+            if head = 0
+                return res
+            res[0] := stack[head]
+            stack[0] := head - 1
+            res[1] := stack
+            return res
+        done
+
+        function main()
+        do
+            var st := 0
+
+            st := push(st, 1)
+            st := push(st, 2)
+            st := push(st, 3)
+
+            res := pop(st)
+            st := res[1]
+            a := res[0]
+
+            res := pop(st)
+            st := res[1]
+            a[1] := res[0]
+
+            res := pop(st)
+            st := res[1]
+            a[2] := res[0]
+        done
+    """
+    table = run_test(text)
+    assert table['__global']['main']['a'] == [3, 2, 1]

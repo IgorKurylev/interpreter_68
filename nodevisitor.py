@@ -23,16 +23,16 @@ class NodeVisitor:
                              'cell'      : str,
                            }
 
-        self.operators = {'-'  : lambda x, y: x -   y,
-                          '+'  : lambda x, y: x +   y,
-                          '*'  : lambda x, y: x *   y,
-                          '<'  : lambda x, y: x <   y,
-                          '>'  : lambda x, y: x >   y,
-                          '<=' : lambda x, y: x <=  y,
-                          '>=' : lambda x, y: x >=  y,
-                          '='  : lambda x, y: x ==  y,
-                          '!=' : lambda x, y: x !=  y,
-                          '^'  : lambda x, y: x ^   y,
+        self.operators = {'-'  : lambda x, y: x -  y,
+                          '+'  : lambda x, y: x +  y,
+                          '*'  : lambda x, y: x *  y,
+                          '<'  : lambda x, y: x <  y,
+                          '>'  : lambda x, y: x >  y,
+                          '<=' : lambda x, y: x <= y,
+                          '>=' : lambda x, y: x >= y,
+                          '='  : lambda x, y: x == y,
+                          '!=' : lambda x, y: x != y,
+                          '^'  : lambda x, y: x ^  y,
                           }
 
         self.unary_operators = {'-': lambda x: -x if isinstance(x, (bool, int)) else '-' + x,
@@ -52,6 +52,8 @@ class NodeVisitor:
 
         self._weight = 0
         self._max_weight = 10
+        self.scopes['__global']['MAX_WEIGHT'] = self._max_weight
+        self.scopes['__global']['WEIGHT'] = self._weight
 
     def _rotation_to_exit(self, x_pos, y_pos, rotation) -> list:  # gives an information about exit in each cell
         _map = self.scopes['__global']['_map']                    # returns list with 1st element is True/False if exit is reachable/unreachable
@@ -185,6 +187,7 @@ class NodeVisitor:
             _map[y_pos][x_pos][rotation] += number                                    # drop number of boxes to current cell
             _map[y_next][x_next][(rotation + 3) % 6] = _map[y_pos][x_pos][rotation]   # drop number of boxes from another side
             self._weight -= number
+            self.scopes['__global']['WEIGHT'] = self._weight
             return True
         if _map[y_pos][x_pos][rotation] > 0 and drop is False:
             if self._weight == self._max_weight:
@@ -192,6 +195,7 @@ class NodeVisitor:
             for _ in range(number):
                 if _map[y_pos][x_pos][rotation] == 0:
                     return True
+                self.scopes['__global']['WEIGHT'] = self._weight
                 self._weight += 1
                 _map[y_pos][x_pos][rotation] -= 1                                        # remove one box from current cell
                 _map[y_next][x_next][(rotation + 3) % 6] = _map[y_pos][x_pos][rotation]  # remove this box from another side
@@ -276,7 +280,7 @@ class NodeVisitor:
 
     def visit_ArrayRef(self, n: tree.ArrayRef, entry_point: dict, get_reference=False):
         """
-        :param get_reference: for assignment we need a reference
+        :param get_reference: for assignment like a[5][3][1] := ... we need a reference
         (it's enough only to return an index before last)
         :return: none or element of array if get_reference=False
                  else return last subscript and reference
@@ -284,7 +288,10 @@ class NodeVisitor:
         indices = []
         cur_node = n
         while type(cur_node) != tree.ID:
-            indices.append(self.visit(cur_node.subscript, entry_point))  # after a[1][2][3] indices will be [3, 2, 1]
+            index = self.visit(cur_node.subscript, entry_point, get_obj=True)
+            if type(index) == list and len(index) == 1:
+                index = index[0]
+            indices.append(index)  # after a[1][2][3] indices will be [3, 2, 1]
             cur_node = cur_node.name
         try:
 
@@ -422,8 +429,16 @@ class NodeVisitor:
             if res is None:
                 return
             subscript, array = res[0], res[1]
-            if subscript > len(array) - 1:
-                array.extend('undef' for _ in range(subscript - len(array) + 1))
+
+            if type(array) in (int, bool, str):
+                array = [array]
+            try:
+                if subscript > len(array) - 1:
+                    array.extend('undef' for _ in range(subscript - len(array) + 1))  # this try/except block is only
+            except TypeError:                                                         # for case when index b in a[b]
+                print(f"Error at {n.coord}: invalid index in array reference {n}")    # is an array which length is > 1
+                self._error_flag = True
+                return
             try:
                 array[subscript] = rvalue
             except IndexError:
@@ -439,10 +454,13 @@ class NodeVisitor:
                 entry_point[n.lvalue.name] = rvalue
                 return entry_point[n.lvalue.name]
             scope, name = ref[0], ref[1]
-            if len(scope[name]) == 1:
-                scope[name][0] = rvalue
-            else:
-                scope[name] = rvalue
+            # if len(scope[name]) == 1:
+            #     if type(rvalue) == list and len(rvalue) == 1:
+            #         rvalue = rvalue[0]
+            #     scope[name][0] = rvalue
+            # else:
+            #     scope[name] = rvalue
+            scope[name] = rvalue
             return rvalue
 
     def _cast_value(self, type_from, type_to, val):
@@ -592,7 +610,7 @@ class NodeVisitor:
 
             if not self._error_flag:
                 res = self.visit(item, entry_point)
-                if type(item) == tree.If and res is not None:
+                if type(item) in (tree.If, tree.While) and res is not None:
                     return res
 
     def visit_EmptyStatement(self, n, entry_point: dict):
@@ -609,21 +627,21 @@ class NodeVisitor:
         if cond is None:
             return
         if bool(cond) and cond != 'undef':
-            if type(n.iftrue) == tree.Return:
-                return self.visit(n.iftrue, entry_point)
-            else:
-                self.visit(n.iftrue, entry_point)
+            res = self.visit(n.iftrue, entry_point)
+            if type(n.iftrue) == tree.Return or\
+                    type(n.iftrue) in (tree.Compound, tree.While, tree.If) and res is not None:
+                return res
         elif cond == 'undef' and n.ifundef is not None:
-            if type(n.ifundef) == tree.Return:
-                return self.visit(n.ifundef, entry_point)
-            else:
-                self.visit(n.ifundef, entry_point)
+            res = self.visit(n.ifundef, entry_point)
+            if type(n.ifundef) == tree.Return or\
+                    type(n.ifundef) in (tree.Compound, tree.While, tree.If) and res is not None:
+                return res
 
         elif not bool(cond) and n.iffalse is not None:
-            if type(n.iffalse) == tree.Return:
-                return self.visit(n.iffalse, entry_point)
-            else:
-                self.visit(n.iffalse, entry_point)
+            res = self.visit(n.iffalse, entry_point)
+            if type(n.iffalse) == tree.Return or\
+                    type(n.iffalse) in (tree.Compound, tree.While, tree.If) and res is not None:
+                return res
         else:
             return
 
@@ -631,13 +649,13 @@ class NodeVisitor:
         cond = self.visit(n.cond, entry_point, get_obj=True)
         if cond is None:
             return
-        if type(cond) == list and cond == [0]:
+        if type(cond) == list and cond == [0] or cond == 'false':
             cond = False
         while bool(cond):
             if cond == 'undef':
                 return
             res = self.visit(n.stmt, entry_point)
-            if type(n.stmt) == tree.Return:
+            if type(n.stmt) == tree.Return or type(n.stmt) in (tree.Compound, tree.If) and res is not None:
                 return res
             cond = self.visit(n.cond, entry_point, get_obj=True)
             if type(cond) == list and cond == [0]:
