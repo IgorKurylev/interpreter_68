@@ -33,6 +33,7 @@ class NodeVisitor:
                           '='  : lambda x, y: x == y,
                           '!=' : lambda x, y: x != y,
                           '^'  : lambda x, y: x ^  y,
+                          '&'  : lambda x, y: x and y,
                           }
 
         self.unary_operators = {'-': lambda x: -x if isinstance(x, (bool, int)) else '-' + x,
@@ -52,8 +53,8 @@ class NodeVisitor:
 
         self._weight = 0
         self._max_weight = 10
-        self.scopes['__global']['MAX_WEIGHT'] = self._max_weight
-        self.scopes['__global']['WEIGHT'] = self._weight
+        self.scopes['__global']['MAX_WEIGHT'] = [self._max_weight]
+        self.scopes['__global']['WEIGHT'] = [self._weight]
 
     def _rotation_to_exit(self, x_pos, y_pos, rotation) -> list:  # gives an information about exit in each cell
         _map = self.scopes['__global']['_map']                    # returns list with 1st element is True/False if exit is reachable/unreachable
@@ -599,8 +600,9 @@ class NodeVisitor:
             self.visit(ext, entry_point)
 
         self._print_scopes(self.scopes)
-        return self.scopes
         #print(self.scopes)
+        return self.scopes
+
 
     def visit_Compound(self, n: tree.Compound, entry_point: dict, func_name=None):
 

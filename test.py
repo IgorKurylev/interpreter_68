@@ -237,6 +237,12 @@ text = r"""
 """
 
 # in this implementation stack is array: [size, el1, el2, ...]
+# global variable WEIGHT is a current weight of loaded boxes
+# it changes whenever we call load/drop operator, don't change it by yourself
+# MAX_WEIGHT and WEIGHT are created in the nodevisitor __init__ method
+# get_neighbours() function returns a stack with directions towards non-visited neighbours
+# is_visited() function checks if the current cell is in the stack of visited cells
+# TODO optimal arrangement of boxes + unsuccessful probability of robot operators execution
 text = r"""
     function push(stack, el)
     do
@@ -286,6 +292,14 @@ text = r"""
         right
     done
     
+    function load_box()
+    do
+        box_weight := test
+        if look = 0 & box_weight > 0
+            if WEIGHT + box_weight < MAX_WEIGHT - 1
+                load box_weight       
+    done
+    
     function get_neighbours(visited)
     do
         res := 0
@@ -301,6 +315,9 @@ text = r"""
                 done
                 return res
             done
+            if test != inf
+                load_box()
+                
             if look > 0
             do
                 forward 1
@@ -354,7 +371,6 @@ text = r"""
                 while _pos[2] != next
                     right
                 forward 1
-                
                 visited := push(visited, get_coords())
             done
             eldef
@@ -366,6 +382,7 @@ text = r"""
                 stack := res[1]
             done
             cnt := cnt + 1
+            print(_pos)
         done
     done
 """
@@ -393,6 +410,14 @@ text = r"""
 #         FINISH[0] := -1
 #         FINISH[1] := -1
 #         FINISH[2] := -1
+#
+#     done
+# """
+
+# text = r"""
+#     function main()
+#     do
+#         a[1][2][3] := 3
 #     done
 # """
 

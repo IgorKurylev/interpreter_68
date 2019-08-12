@@ -63,7 +63,7 @@ class Lexer:
         # Operators
         'PLUS', 'MINUS', 'TIMES', 'DIVIDE',
         'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
-        'SHARP', 'XOR',
+        'SHARP', 'XOR', 'AND',
 
         # Assignment
         'ASSIGN',
@@ -73,10 +73,10 @@ class Lexer:
         'LBRACKET', 'RBRACKET',     # [ ]
         'COMMA',                    # ,
 
-        'OPEN_BRACKET', 'CLOSE_BRACKET',
+        'OPEN_BRACKET', 'CLOSE_BRACKET',  # DO, DONE
 
         # Constants
-        'INT_CONST',
+        'INT_CONST',  # TODO 16 digit constants
         '_NEWLINE',
     )
 
@@ -91,16 +91,20 @@ class Lexer:
     # Operators
     t_PLUS              = r'\+'
     t_MINUS             = r'-'
-    t_TIMES             = r'\*'
-    t_DIVIDE            = r'/'
     t_LT                = r'<'
     t_GT                = r'>'
-    t_LE                = r'<='
-    t_GE                = r'>='
     t_EQ                = r'='
-    t_NE                = r'!='
+
     t_SHARP             = r'\#'
     t_XOR               = r'\^'
+
+    # Added
+    t_AND               = r'&'
+    t_NE                = r'!='
+    t_LE                = r'<='
+    t_GE                = r'>='
+    t_TIMES             = r'\*'
+    t_DIVIDE            = r'/'
 
     # Assignment operators
     t_ASSIGN            = r':='

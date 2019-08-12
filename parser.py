@@ -555,6 +555,7 @@ class Parser:
                                 | binary_expression EQ binary_expression
                                 | binary_expression NE binary_expression
                                 | binary_expression XOR binary_expression
+                                | binary_expression AND binary_expression
         """
         if len(p) == 2:
             p[0] = p[1]
